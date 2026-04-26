@@ -20,15 +20,6 @@ export default function ProductionDashboard() {
     console.log("🚀 Production dashboard fetch started");
     console.log("👤 Current user/profile/company:", profile);
 
-    // 8-second global fail-safe timer
-    const timer = setTimeout(() => {
-      if (isMounted) {
-        console.warn("⚠️ Production Dashboard Timeout Hit (8s)");
-        setError("Veriler yüklenemedi. Lütfen Supabase bağlantısını, RLS yetkilerini ve migration tablolarını kontrol edin.");
-        setLoading(false);
-      }
-    }, 8000);
-
     if (!profile?.company_id) {
       console.log("ℹ️ No company_id found for current user, skipping fetch.");
       if (isMounted) {
@@ -37,7 +28,6 @@ export default function ProductionDashboard() {
       }
       return () => {
         isMounted = false;
-        clearTimeout(timer);
       };
     }
 
@@ -61,7 +51,6 @@ export default function ProductionDashboard() {
       } finally {
         if (isMounted) {
           setLoading(false);
-          clearTimeout(timer);
           console.log("🏁 Production dashboard loading finished");
         }
       }
@@ -71,7 +60,6 @@ export default function ProductionDashboard() {
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
   }, [profile]);
 

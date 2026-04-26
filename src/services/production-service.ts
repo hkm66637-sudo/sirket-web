@@ -58,7 +58,8 @@ export const ProductionService = {
   async getProductionDashboardData(companyId: string) {
     try {
       console.log("🔍 [Service] getProductionDashboardData started for:", companyId);
-      const { data, error } = await supabase
+      
+      const fetchPromise = supabase
         .from("production_orders")
         .select(`
           *,
@@ -68,6 +69,11 @@ export const ProductionService = {
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
 
+      // Add a 6-second timeout directly to the fetch
+      const timeoutPromise = new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Supabase sorgusu zaman aşımına uğradı (6s). Lütfen internet bağlantınızı veya AdBlocker ayarlarınızı kontrol edin.")), 6000));
+      
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
       if (error) {
         console.error("❌ [Service] getProductionDashboardData database error:", error);
         throw new Error(`production_orders: ${error.message}`);
@@ -76,7 +82,7 @@ export const ProductionService = {
     } catch (err: any) {
       console.error("❌ [Service] getProductionDashboardData exceptional error:", err);
       if (err.message && err.message.includes("production_orders")) throw err;
-      throw new Error(`production_orders: ${err.message || "Bilinmeyen hata"}`);
+      throw new Error(`${err.message || "Bilinmeyen hata"}`);
     }
   },
 
