@@ -19,16 +19,36 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    console.log("SUPABASE URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("HAS ANON KEY:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-    if (error) {
-      setError(error.message);
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setError("Supabase bağlantı ayarları eksik. Environment Variables kontrol edilmeli.");
       setLoading(false);
-    } else {
-      router.push("/");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Supabase Login Error Details:", error);
+        if (error.message === "Failed to fetch") {
+          setError(`Sunucu Bağlantı Hatası: Supabase sunucusuna ulaşılamıyor. Hata: ${error.message} (${error.name}) | Details: ${JSON.stringify(error)}`);
+        } else {
+          setError(`Hata: ${error.message} (${error.name}) | Details: ${JSON.stringify(error)}`);
+        }
+        setLoading(false);
+      } else {
+        router.push("/");
+      }
+    } catch (err: any) {
+      console.error("Login Catch Error:", err);
+      setError(`Catch Hatası: ${err.message || err} | Name: ${err.name} | Details: ${JSON.stringify(err)}`);
+      setLoading(false);
     }
   };
 
