@@ -13,18 +13,64 @@ export default function ProductionDashboard() {
   const { profile } = useAuth();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile?.company_id) {
-      ProductionService.getOrders(profile.company_id)
-        .then(setOrders)
-        .catch(console.error)
-        .finally(() => setLoading(false));
+    let isMounted = true;
+    if (!profile?.company_id) {
+      return;
     }
+
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.")), 15000)
+        );
+
+        const fetchPromise = ProductionService.getOrders(profile!.company_id as string);
+
+        const data = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+        if (isMounted) {
+          setOrders(data);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("❌ Production Dashboard Error:", err);
+          setError(err.message || "Veriler yüklenirken hata oluştu.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [profile]);
 
   if (loading) {
-    return <div className="p-8 text-slate-500 font-bold animate-pulse">Yükleniyor...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+        <p className="text-sm font-black text-slate-400 uppercase tracking-widest animate-pulse">Üretim Verileri Hazırlanıyor...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-12">
+        <h2 className="text-xl font-black text-slate-900 mb-2">Sistem Hatası</h2>
+        <p className="text-slate-500 text-sm font-medium">{error}</p>
+      </div>
+    );
   }
 
   // Aggregate stats

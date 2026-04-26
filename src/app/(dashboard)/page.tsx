@@ -74,10 +74,17 @@ export default function Dashboard() {
       
       try {
         console.log(`🚀 Dashboard: Fetch Started (${selectedCompanyId}) | Range: ${dateFilter.label}`);
-        const dashboardData = await DashboardService.getDashboardData(selectedCompanyId, {
+        
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.")), 15000)
+        );
+
+        const fetchPromise = DashboardService.getDashboardData(selectedCompanyId, {
           startDate: dateFilter.startDate,
           endDate: dateFilter.endDate
         });
+
+        const dashboardData = await Promise.race([fetchPromise, timeoutPromise]);
         
         if (isMounted) {
           setData(dashboardData);
