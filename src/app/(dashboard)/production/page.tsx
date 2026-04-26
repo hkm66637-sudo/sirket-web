@@ -17,33 +17,51 @@ export default function ProductionDashboard() {
 
   useEffect(() => {
     let isMounted = true;
+    console.log("🚀 Production dashboard fetch started");
+    console.log("👤 Current user/profile/company:", profile);
+
+    // 8-second global fail-safe timer
+    const timer = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn("⚠️ Production Dashboard Timeout Hit (8s)");
+        setError("Veriler yüklenemedi. Lütfen Supabase bağlantısını, RLS yetkilerini ve migration tablolarını kontrol edin.");
+        setLoading(false);
+      }
+    }, 8000);
+
     if (!profile?.company_id) {
-      return;
+      console.log("ℹ️ No company_id found for current user, skipping fetch.");
+      if (isMounted) {
+        setLoading(false);
+        console.log("🏁 Production dashboard loading finished (No company_id)");
+      }
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
     }
 
     const loadData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.")), 15000)
-        );
+        const fetchPromise = ProductionService.getProductionDashboardData(profile.company_id as string);
+        const data = await fetchPromise;
 
-        const fetchPromise = ProductionService.getOrders(profile!.company_id as string);
-
-        const data = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        console.log("📦 Production dashboard response:", data);
 
         if (isMounted) {
-          setOrders(data);
+          setOrders(data || []);
         }
       } catch (err: any) {
         if (isMounted) {
-          console.error("❌ Production Dashboard Error:", err);
+          console.error("❌ Production dashboard fetch error:", err);
           setError(err.message || "Veriler yüklenirken hata oluştu.");
         }
       } finally {
         if (isMounted) {
           setLoading(false);
+          console.log("🏁 Production dashboard loading finished");
         }
       }
     };
@@ -52,6 +70,7 @@ export default function ProductionDashboard() {
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
   }, [profile]);
 
@@ -67,8 +86,21 @@ export default function ProductionDashboard() {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-12">
-        <h2 className="text-xl font-black text-slate-900 mb-2">Sistem Hatası</h2>
-        <p className="text-slate-500 text-sm font-medium">{error}</p>
+        <h2 className="text-xl font-black text-slate-900 mb-2 font-bold">Sistem Hatası</h2>
+        <p className="text-slate-500 text-sm font-semibold">{error}</p>
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="bg-white border border-slate-100 shadow-sm rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-12 flex flex-col items-center gap-4">
+        <Package className="w-12 h-12 text-slate-300" />
+        <h2 className="text-xl font-black text-slate-900">Üretim Verisi Bulunamadı</h2>
+        <p className="text-slate-500 text-xs font-bold leading-relaxed max-w-sm">Henüz üretim verisi yok. Ürün, reçete veya sipariş ekleyerek başlayın.</p>
+        <Link href="/production/orders" className="bg-blue-600 text-white text-xs font-extrabold px-5 py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 mt-2">
+          Sipariş Oluştur
+        </Link>
       </div>
     );
   }

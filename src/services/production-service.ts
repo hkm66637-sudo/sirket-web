@@ -55,6 +55,30 @@ export interface ProductionOrder {
 
 export const ProductionService = {
   // --- FETCH QUERIES ---
+  async getProductionDashboardData(companyId: string) {
+    try {
+      console.log("🔍 [Service] getProductionDashboardData started for:", companyId);
+      const { data, error } = await supabase
+        .from("production_orders")
+        .select(`
+          *,
+          products:product_id (id, name, sku),
+          machines:machine_id (id, name, code)
+        `)
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("❌ [Service] getProductionDashboardData database error:", error);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.error("❌ [Service] getProductionDashboardData exceptional error:", err);
+      return [];
+    }
+  },
+
   async getOrders(companyId: string) {
     const { data, error } = await supabase
       .from("production_orders")
