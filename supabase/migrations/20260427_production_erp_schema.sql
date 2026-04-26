@@ -147,12 +147,29 @@ ALTER TABLE public.production_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.production_notifications ENABLE ROW LEVEL SECURITY;
 
 -- Dynamic Policy: Global view by auth, filter per frontend.
+DROP POLICY IF EXISTS "Auth access for products" ON public.products;
 CREATE POLICY "Auth access for products" ON public.products FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for raw_materials" ON public.raw_materials;
 CREATE POLICY "Auth access for raw_materials" ON public.raw_materials FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for machines" ON public.machines;
 CREATE POLICY "Auth access for machines" ON public.machines FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for product_recipes" ON public.product_recipes;
 CREATE POLICY "Auth access for product_recipes" ON public.product_recipes FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for production_orders" ON public.production_orders;
 CREATE POLICY "Auth access for production_orders" ON public.production_orders FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for movements" ON public.raw_material_movements;
 CREATE POLICY "Auth access for movements" ON public.raw_material_movements FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for requests" ON public.purchase_requests;
 CREATE POLICY "Auth access for requests" ON public.purchase_requests FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for logs" ON public.production_logs;
 CREATE POLICY "Auth access for logs" ON public.production_logs FOR ALL USING (auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Auth access for notifications" ON public.production_notifications;
 CREATE POLICY "Auth access for notifications" ON public.production_notifications FOR ALL USING (auth.role() = 'authenticated');

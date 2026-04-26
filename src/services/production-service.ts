@@ -70,12 +70,13 @@ export const ProductionService = {
 
       if (error) {
         console.error("❌ [Service] getProductionDashboardData database error:", error);
-        return [];
+        throw new Error(`production_orders: ${error.message}`);
       }
       return data || [];
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ [Service] getProductionDashboardData exceptional error:", err);
-      return [];
+      if (err.message && err.message.includes("production_orders")) throw err;
+      throw new Error(`production_orders: ${err.message || "Bilinmeyen hata"}`);
     }
   },
 
@@ -90,7 +91,10 @@ export const ProductionService = {
       .eq("company_id", companyId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("production_orders query error:", error);
+      throw new Error(`production_orders: ${error.message}`);
+    }
     return data || [];
   },
 
@@ -100,7 +104,10 @@ export const ProductionService = {
       .select("*")
       .eq("company_id", companyId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("products query error:", error);
+      throw new Error(`products: ${error.message}`);
+    }
     return data || [];
   },
 
@@ -113,7 +120,10 @@ export const ProductionService = {
       `)
       .eq("product_id", productId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("product_recipes query error:", error);
+      throw new Error(`product_recipes: ${error.message}`);
+    }
     return data || [];
   },
 
@@ -123,7 +133,10 @@ export const ProductionService = {
       .select("*")
       .eq("company_id", companyId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("raw_materials query error:", error);
+      throw new Error(`raw_materials: ${error.message}`);
+    }
     return data || [];
   },
 
@@ -133,7 +146,10 @@ export const ProductionService = {
       .select("*")
       .eq("company_id", companyId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("machines query error:", error);
+      throw new Error(`machines: ${error.message}`);
+    }
     return data || [];
   },
 
@@ -146,7 +162,10 @@ export const ProductionService = {
       `)
       .eq("company_id", companyId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("purchase_requests query error:", error);
+      throw new Error(`purchase_requests: ${error.message}`);
+    }
     return data || [];
   },
 

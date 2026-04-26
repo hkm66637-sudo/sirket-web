@@ -22,7 +22,7 @@ export default function ProductionDashboard() {
 
     // 8-second global fail-safe timer
     const timer = setTimeout(() => {
-      if (isMounted && loading) {
+      if (isMounted) {
         console.warn("⚠️ Production Dashboard Timeout Hit (8s)");
         setError("Veriler yüklenemedi. Lütfen Supabase bağlantısını, RLS yetkilerini ve migration tablolarını kontrol edin.");
         setLoading(false);
@@ -56,11 +56,12 @@ export default function ProductionDashboard() {
       } catch (err: any) {
         if (isMounted) {
           console.error("❌ Production dashboard fetch error:", err);
-          setError(err.message || "Veriler yüklenirken hata oluştu.");
+          setError(err instanceof Error ? err.message : err.message || "Bilinmeyen hata");
         }
       } finally {
         if (isMounted) {
           setLoading(false);
+          clearTimeout(timer);
           console.log("🏁 Production dashboard loading finished");
         }
       }
@@ -86,8 +87,16 @@ export default function ProductionDashboard() {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-[2.5rem] p-12 text-center max-w-2xl mx-auto mt-12">
-        <h2 className="text-xl font-black text-slate-900 mb-2 font-bold">Sistem Hatası</h2>
-        <p className="text-slate-500 text-sm font-semibold">{error}</p>
+        <h2 className="text-xl font-black text-slate-900 mb-4 font-bold">Sistem Hatası</h2>
+        <div className="bg-white p-4 rounded-xl border border-red-100 text-left mb-6 shadow-sm w-full">
+          <p className="text-red-600 text-sm font-mono font-bold break-words">{error}</p>
+        </div>
+        <div className="text-slate-500 text-xs font-medium space-y-2 text-left max-w-lg mx-auto bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <p className="font-bold text-slate-700 mb-2">Olası Nedenler ve Çözümler:</p>
+          <p>• <strong className="text-slate-700">Tablo Yok:</strong> Migration dosyalarından veritabanı tablolarının oluşturulduğunu doğrulayın.</p>
+          <p>• <strong className="text-slate-700">Permission Denied:</strong> Supabase RLS (Row Level Security) politikalarının eksik olup olmadığını kontrol edin.</p>
+          <p>• <strong className="text-slate-700">Kolon Bulunamadı:</strong> SQL tablolarında istenen kolonların var olduğunu teyit edin.</p>
+        </div>
       </div>
     );
   }
