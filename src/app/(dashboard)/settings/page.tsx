@@ -213,6 +213,12 @@ export default function SettingsPage() {
               setPasswordError("");
               setPasswordSuccess("");
 
+              if (!user) {
+                setPasswordError("Oturum bulunamadı, tekrar giriş yapın.");
+                setTimeout(() => router.push("/auth/login"), 2000);
+                return;
+              }
+
               if (newPassword.length < 6) {
                 setPasswordError("Şifre en az 6 karakter olmalı.");
                 return;
@@ -225,17 +231,25 @@ export default function SettingsPage() {
 
               setIsSubmitting(true);
               try {
-                const { error } = await supabase.auth.updateUser({ password: newPassword });
-                if (error) {
-                  setPasswordError(error.message);
-                } else {
-                  setPasswordSuccess("Şifre başarıyla güncellendi.");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                  setTimeout(() => setIsPasswordModalOpen(false), 2000);
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.")), 15000)
+                );
+
+                const updatePromise = supabase.auth.updateUser({ password: newPassword });
+
+                const result = await Promise.race([updatePromise, timeoutPromise]) as any;
+
+                if (result && result.error) {
+                  throw result.error;
                 }
+
+                setPasswordSuccess("Şifre başarıyla güncellendi.");
+                setNewPassword("");
+                setConfirmPassword("");
+                setTimeout(() => setIsPasswordModalOpen(false), 2000);
               } catch (err: any) {
-                setPasswordError(err.message || "Bilinmeyen bir hata oluştu.");
+                console.error("Password update error:", err);
+                setPasswordError(err.message || "Şifre güncellenirken hata oluştu.");
               } finally {
                 setIsSubmitting(false);
               }
