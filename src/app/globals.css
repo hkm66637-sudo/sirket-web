@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+}
+
+:root {
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --sidebar-bg: #0f172a;
+  
+  /* Form Constants */
+  --form-height: 3rem; /* 48px */
+  --form-radius: 0.875rem; /* 14px */
+  --form-border: #e2e8f0;
+  --form-focus: #3b82f6;
+  --form-placeholder: #94a3b8;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  * {
+    border-color: #e2e8f0;
+  }
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background-color: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  border-color: #3b82f633;
+}
+
+/* Table Enhancements */
+.table-header {
+  background-color: rgba(248, 250, 252, 0.5);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.table-cell {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9/50;
+}
+
+/* Unified Form Controls */
+input, select, textarea {
+  width: 100%;
+  height: var(--form-height);
+  background-color: white;
+  border: 1px solid var(--form-border);
+  border-radius: var(--form-radius);
+  padding: 0 1rem;
+  outline: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+}
+
+textarea {
+  height: auto;
+  min-height: 6rem;
+  padding: 0.875rem 1rem;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--form-placeholder);
+  font-weight: 500;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--form-focus);
+  background-color: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.06);
+}
+
+input:disabled, select:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Chrome/Safari Fix for Select Baseline */
+select {
+  padding-right: 2.5rem;
+  line-height: inherit;
+}
+
+/* Icon Wrappers for relative positioning */
+.form-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.form-icon-left {
+  position: absolute;
+  left: 1rem;
+  color: var(--form-placeholder);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.form-icon-container:focus-within .form-icon-left {
+  color: var(--form-focus);
+}
+
+.form-input-with-icon-left {
+  padding-left: 2.75rem !important;
+}
+
+/* Buttons */
+button.primary {
+  height: var(--form-height);
+  background-color: #2563eb;
+  color: white;
+  font-weight: 800;
+  padding: 0 1.5rem;
+  border-radius: var(--form-radius);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+}
+
+button.primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px -3px rgba(37, 99, 235, 0.25);
+}
+
+button.primary:active {
+  transform: translateY(0);
+}
+
+button.secondary {
+  height: var(--form-height);
+  background-color: white;
+  color: #475569;
+  font-weight: 700;
+  padding: 0 1.5rem;
+  border-radius: var(--form-radius);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.secondary:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Animations */
+@keyframes slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}

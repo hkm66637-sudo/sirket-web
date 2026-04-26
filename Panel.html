@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Şirket Yönetim Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="data.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f2f5; color: #1a2332; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c8d0dc; border-radius: 3px; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ─── TWEAK DEFAULTS ─────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "#2563eb",
+  "sidebarDark": true,
+  "tableCompact": false,
+  "colorScheme": "light"
+}/*EDITMODE-END*/;
+
+// ─── ICONS (inline SVG) ──────────────────────────────────────────────────────
+const Icon = ({ name, size = 16 }) => {
+  const paths = {
+    dashboard: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
+    tasks: "M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zM5 20c-1.1 0-1.99-.9-1.99-2L3 6c0-1.1.9-2 2-2h1V2h2v2h8V2h2v2h1c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5zm0-2h14V9H5v9z",
+    calendar: "M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z",
+    finance: "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+    income: "M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z",
+    expense: "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z",
+    users: "M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
+    quickadd: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+    search: "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+    bell: "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z",
+    chevron: "M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
+    down: "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z",
+    up: "M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z",
+    edit: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
+    trash: "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z",
+    check: "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
+    close: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+    financeCalendar: "M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z",
+    plus: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+    logout: "M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z",
+  };
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" style={{ flexShrink: 0 }}>
+      <path d={paths[name] || paths.dashboard} />
+    </svg>
+  );
+};
+
+// ─── BADGE ───────────────────────────────────────────────────────────────────
+const Badge = ({ children, color = "gray" }) => {
+  const colors = {
+    green:  { bg: "#dcfce7", text: "#15803d" },
+    red:    { bg: "#fee2e2", text: "#dc2626" },
+    blue:   { bg: "#dbeafe", text: "#1d4ed8" },
+    orange: { bg: "#ffedd5", text: "#c2410c" },
+    gray:   { bg: "#f1f5f9", text: "#475569" },
+    purple: { bg: "#ede9fe", text: "#7c3aed" },
+    yellow: { bg: "#fef9c3", text: "#a16207" },
+  };
+  const c = colors[color] || colors.gray;
+  return (
+    <span style={{ background: c.bg, color: c.text, fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>
+      {children}
+    </span>
+  );
+};
+
+// ─── CARD ─────────────────────────────────────────────────────────────────────
+const Card = ({ children, style = {}, padding = "20px" }) => (
+  <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #e5eaf0", padding, ...style }}>
+    {children}
+  </div>
+);
+
+// ─── SECTION TITLE ───────────────────────────────────────────────────────────
+const SectionTitle = ({ children, action }) => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+    <h2 style={{ fontSize: 14, fontWeight: 700, color: "#1a2332", letterSpacing: "0.02em", textTransform: "uppercase" }}>{children}</h2>
+    {action && <span style={{ fontSize: 12, color: "#2563eb", cursor: "pointer", fontWeight: 600 }}>{action}</span>}
+  </div>
+);
+
+// ─── MINI BAR CHART ──────────────────────────────────────────────────────────
+const MiniBarChart = ({ data }) => {
+  const maxVal = Math.max(...data.flatMap(d => [d.gelir, d.gider]).filter(v => v > 0));
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80, padding: "4px 0" }}>
+      {data.filter(d => d.gelir > 0 || d.gider > 0).map((d, i) => (
+        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <div style={{ width: "100%", display: "flex", gap: 2, alignItems: "flex-end", height: 64 }}>
+            <div style={{ flex: 1, background: "#22c55e", borderRadius: "3px 3px 0 0", height: `${(d.gelir / maxVal) * 100}%`, opacity: 0.85 }} />
+            <div style={{ flex: 1, background: "#f87171", borderRadius: "3px 3px 0 0", height: `${(d.gider / maxVal) * 100}%`, opacity: 0.85 }} />
+          </div>
+          <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{d.ay}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── PROGRESS BAR ────────────────────────────────────────────────────────────
+const ProgressBar = ({ value, color = "#2563eb" }) => (
+  <div style={{ width: "100%", background: "#f1f5f9", borderRadius: 99, height: 6, overflow: "hidden" }}>
+    <div style={{ width: `${value}%`, background: color, height: "100%", borderRadius: 99 }} />
+  </div>
+);
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+const Dashboard = ({ accent }) => {
+  const { dashboardKPIs, yaklaşanOdemeler, yaklaşanTahsilatlar, gorevler, gelirGider } = DATA;
+  const bugunGorevler = gorevler.filter(g => g.durum !== "Tamamlandı" && g.durum !== "Gecikmiş");
+  const gecikmiş = gorevler.filter(g => g.durum === "Gecikmiş");
+
+  const kpiColors = { green: "#22c55e", red: "#ef4444", blue: accent, orange: "#f97316" };
+  const kpiBg = { green: "#f0fdf4", red: "#fef2f2", blue: "#eff6ff", orange: "#fff7ed" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* KPI Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        {dashboardKPIs.map((kpi, i) => (
+          <Card key={i} style={{ borderTop: `3px solid ${kpiColors[kpi.color]}` }}>
+            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>{kpi.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#1a2332", marginBottom: 6 }}>{kpi.value}</div>
+            <div style={{ fontSize: 12, color: kpi.up ? "#15803d" : "#dc2626", fontWeight: 600 }}>
+              {kpi.up ? "▲" : "▼"} {kpi.change}
+              <span style={{ color: "#94a3b8", fontWeight: 400, marginLeft: 4 }}>geçen aya göre</span>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Row 2: Görevler + Chart */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {/* Bugün Yapılacaklar */}
+        <Card>
+          <SectionTitle action="Tümünü Gör">Bugün Yapılacaklar</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {bugunGorevler.slice(0, 5).map((g, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "#f8fafc", borderRadius: 6, borderLeft: `3px solid ${g.oncelik === "Yüksek" ? "#ef4444" : g.oncelik === "Orta" ? "#f97316" : "#94a3b8"}` }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2332" }}>{g.baslik}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{g.atanan} · {g.modul}</div>
+                </div>
+                <Badge color={g.oncelik === "Yüksek" ? "red" : g.oncelik === "Orta" ? "orange" : "gray"}>{g.oncelik}</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Gelir/Gider Chart */}
+        <Card>
+          <SectionTitle>Gelir & Gider — 2026</SectionTitle>
+          <MiniBarChart data={gelirGider} />
+          <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748b" }}>
+              <div style={{ width: 10, height: 10, background: "#22c55e", borderRadius: 2 }} /> Gelir
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#64748b" }}>
+              <div style={{ width: 10, height: 10, background: "#f87171", borderRadius: 2 }} /> Gider
+            </div>
+          </div>
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {[
+                { label: "Bu Ay Gelir", val: "₺487.350", color: "#15803d" },
+                { label: "Bu Ay Gider", val: "₺312.800", color: "#dc2626" },
+                { label: "Net", val: "₺174.550", color: accent },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{s.val}</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Row 3: Ödemeler + Tahsilatlar */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {/* Yaklaşan Ödemeler */}
+        <Card padding="0">
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f1f5f9" }}>
+            <SectionTitle action="Tümünü Gör">Yaklaşan Ödemeler</SectionTitle>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "8px 20px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Alıcı</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Tutar</th>
+                <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Tarih</th>
+                <th style={{ padding: "8px 20px 8px 10px", textAlign: "center", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {yaklaşanOdemeler.map((o, i) => (
+                <tr key={i} style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "10px 20px" }}>
+                    <div style={{ fontWeight: 600, color: "#1a2332" }}>{o.alici}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>{o.kategori}</div>
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right", fontWeight: 700, color: "#dc2626" }}>{o.tutar}</td>
+                  <td style={{ padding: "10px", textAlign: "center", color: "#64748b", fontSize: 12 }}>{o.tarih.slice(5)}</td>
+                  <td style={{ padding: "10px 20px 10px 10px", textAlign: "center" }}>
+                    <Badge color={o.durum === "Onay Bekliyor" ? "orange" : "gray"}>{o.durum}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+
+        {/* Yaklaşan Tahsilatlar */}
+        <Card padding="0">
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f1f5f9" }}>
+            <SectionTitle action="Tümünü Gör">Yaklaşan Tahsilatlar</SectionTitle>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                <th style={{ padding: "8px 20px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Müşteri</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Tutar</th>
+                <th style={{ padding: "8px 10px", textAlign: "center", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Tarih</th>
+                <th style={{ padding: "8px 20px 8px 10px", textAlign: "center", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>Durum</th>
+              </tr>
+            </thead>
+            <tbody>
+              {yaklaşanTahsilatlar.map((t, i) => (
+                <tr key={i} style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "10px 20px" }}>
+                    <div style={{ fontWeight: 600, color: "#1a2332" }}>{t.musteri}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>{t.kategori}</div>
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right", fontWeight: 700, color: "#15803d" }}>{t.tutar}</td>
+                  <td style={{ padding: "10px", textAlign: "center", color: "#64748b", fontSize: 12 }}>{t.tarih.slice(5)}</td>
+                  <td style={{ padding: "10px 20px 10px 10px", textAlign: "center" }}>
+                    <Badge color={t.durum === "Gecikmiş" ? "red" : "blue"}>{t.durum}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+
+      {/* Row 4: Geciken işler */}
+      {gecikmiş.length > 0 && (
+        <Card style={{ borderLeft: "4px solid #ef4444" }}>
+          <SectionTitle>⚠ Geciken İşler</SectionTitle>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {gecikmiş.map((g, i) => (
+              <div key={i} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 6, padding: "8px 14px", fontSize: 13 }}>
+                <span style={{ fontWeight: 600, color: "#dc2626" }}>{g.baslik}</span>
+                <span style={{ color: "#94a3b8", marginLeft: 8 }}>— {g.atanan}</span>
+                <span style={{ color: "#ef4444", marginLeft: 8, fontSize: 12 }}>Son: {g.bitis}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// ─── GÖREVLER ────────────────────────────────────────────────────────────────
+const Gorevler = ({ accent }) => {
+  const [filtre, setFiltre] = useState("Tümü");
+  const [search, setSearch] = useState("");
+  const durumlar = ["Tümü", "Bekliyor", "Devam Ediyor", "Gecikmiş", "Tamamlandı"];
+  const durumRenk = { "Bekliyor": "gray", "Devam Ediyor": "blue", "Gecikmiş": "red", "Tamamlandı": "green" };
+  const oncelikRenk = { "Yüksek": "red", "Orta": "orange", "Düşük": "gray" };
+
+  const filtered = DATA.gorevler.filter(g =>
+    (filtre === "Tümü" || g.durum === filtre) &&
+    (g.baslik.toLowerCase().includes(search.toLowerCase()) || g.atanan.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  return (
+    <div>
+      <Card padding="0">
+        {/* Toolbar */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Görev ara..."
+            style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220, outline: "none" }}
+          />
+          <div style={{ display: "flex", gap: 6 }}>
+            {durumlar.map(d => (
+              <button key={d} onClick={() => setFiltre(d)} style={{
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, border: "1px solid",
+                background: filtre === d ? accent : "#fff",
+                borderColor: filtre === d ? accent : "#e2e8f0",
+                color: filtre === d ? "#fff" : "#475569",
+              }}>{d}</button>
+            ))}
+          </div>
+          <button style={{ marginLeft: "auto", padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, background: accent, color: "#fff", border: "none", display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon name="plus" size={14} /> Yeni Görev
+          </button>
+        </div>
+
+        {/* Table */}
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "#f8fafc" }}>
+              {["#", "Görev Başlığı", "Durum", "Öncelik", "Modül", "Atanan Kişi", "Bitiş Tarihi", ""].map((h, i) => (
+                <th key={i} style={{ padding: "9px 16px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((g, i) => (
+              <tr key={g.id} style={{ borderTop: "1px solid #f1f5f9", transition: "background 0.1s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseLeave={e => e.currentTarget.style.background = ""}>
+                <td style={{ padding: "11px 16px", color: "#94a3b8", fontWeight: 600, fontSize: 12 }}>{g.id}</td>
+                <td style={{ padding: "11px 16px", fontWeight: 600, color: "#1a2332" }}>{g.baslik}</td>
+                <td style={{ padding: "11px 16px" }}><Badge color={durumRenk[g.durum]}>{g.durum}</Badge></td>
+                <td style={{ padding: "11px 16px" }}><Badge color={oncelikRenk[g.oncelik]}>{g.oncelik}</Badge></td>
+                <td style={{ padding: "11px 16px", color: "#475569" }}>{g.modul}</td>
+                <td style={{ padding: "11px 16px", color: "#475569" }}>{g.atanan}</td>
+                <td style={{ padding: "11px 16px", color: g.durum === "Gecikmiş" ? "#dc2626" : "#64748b", fontWeight: g.durum === "Gecikmiş" ? 600 : 400 }}>{g.bitis}</td>
+                <td style={{ padding: "11px 16px" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button style={{ border: "none", background: "none", color: "#94a3b8", cursor: "pointer" }}><Icon name="edit" size={14} /></button>
+                    <button style={{ border: "none", background: "none", color: "#f87171", cursor: "pointer" }}><Icon name="trash" size={14} /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ padding: "12px 20px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>{filtered.length} görev gösteriliyor</span>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── TAKVIM ───────────────────────────────────────────────────────────────────
+const Takvim = ({ accent, finans = false }) => {
+  const bugunGun = 20;
+  const ayGunler = Array.from({ length: 30 }, (_, i) => i + 1);
+  const ilkGunHafta = 3; // April 1, 2026 is Wednesday (3)
+  const etkinlikRenk = { toplanti: "#2563eb", gorusme: "#7c3aed", uretim: "#0891b2", finans: "#dc2626", tahsilat: "#15803d" };
+  const etkinlikLabel = { toplanti: "Toplantı", gorusme: "Görüşme", uretim: "Üretim", finans: "Ödeme", tahsilat: "Tahsilat" };
+
+  const etkinlikler = DATA.takvimEtkinlikleri.filter(e => !finans || ["finans", "tahsilat"].includes(e.tur));
+
+  const getEtkinlikler = (gun) => {
+    const tarih = `2026-04-${String(gun).padStart(2, "0")}`;
+    return etkinlikler.filter(e => e.tarih === tarih);
+  };
+
+  const haftaGunleri = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const bosluklar = Array.from({ length: ilkGunHafta - 1 }, (_, i) => i);
+
+  return (
+    <div style={{ display: "flex", gap: 16 }}>
+      {/* Calendar Grid */}
+      <div style={{ flex: 1 }}>
+        <Card padding="0">
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Nisan 2026 {finans ? "— Finans Takvimi" : ""}</h3>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "5px 10px", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>‹ Önceki</button>
+              <button style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "5px 10px", background: "#fff", fontSize: 12, fontWeight: 600, color: "#475569" }}>Sonraki ›</button>
+            </div>
+          </div>
+          <div style={{ padding: 16 }}>
+            {/* Days of week */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+              {haftaGunleri.map(g => (
+                <div key={g} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#94a3b8", padding: "4px 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{g}</div>
+              ))}
+            </div>
+            {/* Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+              {bosluklar.map(i => <div key={`b${i}`} />)}
+              {ayGunler.map(gun => {
+                const ev = getEtkinlikler(gun);
+                const isToday = gun === bugunGun;
+                return (
+                  <div key={gun} style={{
+                    minHeight: 72,
+                    borderRadius: 6,
+                    border: `1px solid ${isToday ? accent : "#f1f5f9"}`,
+                    background: isToday ? "#eff6ff" : "#fafafa",
+                    padding: "6px 8px",
+                    cursor: "pointer",
+                    transition: "background 0.1s",
+                  }}
+                    onMouseEnter={e => !isToday && (e.currentTarget.style.background = "#f0f4fa")}
+                    onMouseLeave={e => !isToday && (e.currentTarget.style.background = "#fafafa")}>
+                    <div style={{ fontSize: 12, fontWeight: isToday ? 700 : 500, color: isToday ? accent : "#475569", marginBottom: 4 }}>{gun}</div>
+                    {ev.slice(0, 2).map((e, i) => (
+                      <div key={i} style={{ fontSize: 10, background: etkinlikRenk[e.tur], color: "#fff", borderRadius: 3, padding: "2px 4px", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>
+                        {e.saat} {e.baslik}
+                      </div>
+                    ))}
+                    {ev.length > 2 && <div style={{ fontSize: 10, color: "#94a3b8" }}>+{ev.length - 2}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Sidebar */}
+      <div style={{ width: 240 }}>
+        <Card style={{ marginBottom: 14 }}>
+          <SectionTitle>Bu Ay Etkinlikler</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {Object.entries(etkinlikLabel).filter(([k]) => !finans || ["finans", "tahsilat"].includes(k)).map(([key, label]) => {
+              const count = etkinlikler.filter(e => e.tur === key).length;
+              return (
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 2, background: etkinlikRenk[key], flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: "#475569", flex: 1 }}>{label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#1a2332" }}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+        <Card>
+          <SectionTitle>Bugünkü Program</SectionTitle>
+          {etkinlikler.filter(e => e.tarih === "2026-04-20").length === 0 && (
+            <div style={{ fontSize: 13, color: "#94a3b8" }}>Bugün etkinlik yok</div>
+          )}
+          {etkinlikler.filter(e => e.tarih === "2026-04-20").map((e, i) => (
+            <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>{e.saat}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2332" }}>{e.baslik}</div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ─── GELİR-GİDER YÖNETİMİ ───────────────────────────────────────────────────
+const GelirGiderYonetim = ({ accent }) => {
+  const [tab, setTab] = useState("gelir");
+  const tumGelirler = [
+    { tarih: "2026-04-19", aciklama: "Teknosa A.Ş. — Ürün Satışı", kategori: "B2B Satış", tutar: 64500, belgeno: "FAT-2024-841" },
+    { tarih: "2026-04-18", aciklama: "Trendyol Ödemesi", kategori: "E-Ticaret", tutar: 28700, belgeno: "TRY-0419" },
+    { tarih: "2026-04-17", aciklama: "Bakım Hizmeti Geliri", kategori: "Servis", tutar: 12800, belgeno: "SRV-118" },
+    { tarih: "2026-04-16", aciklama: "Kırtasiye Bayii Satışı", kategori: "B2B Satış", tutar: 9400, belgeno: "FAT-2024-840" },
+    { tarih: "2026-04-15", aciklama: "Hepsiburada Ödemesi", kategori: "E-Ticaret", tutar: 19300, belgeno: "HB-0415" },
+    { tarih: "2026-04-14", aciklama: "Yıllık Bakım Sözleşmesi", kategori: "Servis", tutar: 24000, belgeno: "SRV-117" },
+  ];
+  const tumGiderler = [
+    { tarih: "2026-04-19", aciklama: "Aras Kargo — Aylık Fatura", kategori: "Lojistik", tutar: 8400, belgeno: "GDR-441" },
+    { tarih: "2026-04-18", aciklama: "Hammadde Alımı — Tedarikçi A", kategori: "Hammadde", tutar: 42000, belgeno: "GDR-440" },
+    { tarih: "2026-04-17", aciklama: "Yazılım Lisansları", kategori: "Teknoloji", tutar: 1850, belgeno: "GDR-439" },
+    { tarih: "2026-04-16", aciklama: "Elektrik Faturası", kategori: "Fatura", tutar: 3200, belgeno: "GDR-438" },
+    { tarih: "2026-04-15", aciklama: "Personel Harcırahı", kategori: "Personel", tutar: 2400, belgeno: "GDR-437" },
+    { tarih: "2026-04-14", aciklama: "Ofis Malzemeleri", kategori: "Diğer", tutar: 1100, belgeno: "GDR-436" },
+  ];
+
+  const data = tab === "gelir" ? tumGelirler : tumGiderler;
+  const total = data.reduce((s, d) => s + d.tutar, 0);
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 14, marginBottom: 16 }}>
+        {[["gelir", "Gelirler", "#15803d", "#f0fdf4"], ["gider", "Giderler", "#dc2626", "#fef2f2"]].map(([key, label, col, bg]) => (
+          <div key={key} onClick={() => setTab(key)} style={{ flex: 1, background: tab === key ? bg : "#fff", border: `1px solid ${tab === key ? col : "#e5eaf0"}`, borderRadius: 8, padding: "14px 18px", cursor: "pointer" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: tab === key ? col : "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: tab === key ? col : "#64748b", marginTop: 4 }}>
+              {tab === key ? `₺ ${total.toLocaleString("tr-TR")}` : "—"}
+            </div>
+          </div>
+        ))}
+        <button style={{ padding: "0 20px", borderRadius: 8, background: accent, color: "#fff", border: "none", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+          <Icon name="plus" size={14} /> Yeni Kayıt Ekle
+        </button>
+      </div>
+
+      <Card padding="0">
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: 10, alignItems: "center" }}>
+          <input placeholder="Ara..." style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 200, outline: "none" }} />
+          <select style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none", color: "#475569", background: "#fff" }}>
+            <option>Tüm Kategoriler</option>
+            <option>B2B Satış</option>
+            <option>E-Ticaret</option>
+            <option>Servis</option>
+          </select>
+          <input type="month" defaultValue="2026-04" style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 10px", fontSize: 13, outline: "none" }} />
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "#f8fafc" }}>
+              {["Tarih", "Açıklama", "Kategori", "Belge No", "Tutar", ""].map((h, i) => (
+                <th key={i} style={{ padding: "9px 16px", textAlign: i === 3 || i === 4 ? "right" : "left", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d, i) => (
+              <tr key={i} style={{ borderTop: "1px solid #f1f5f9" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                onMouseLeave={e => e.currentTarget.style.background = ""}>
+                <td style={{ padding: "11px 16px", color: "#64748b" }}>{d.tarih.slice(5)}</td>
+                <td style={{ padding: "11px 16px", fontWeight: 600, color: "#1a2332" }}>{d.aciklama}</td>
+                <td style={{ padding: "11px 16px" }}><Badge>{d.kategori}</Badge></td>
+                <td style={{ padding: "11px 16px", textAlign: "right", color: "#94a3b8", fontFamily: "monospace", fontSize: 12 }}>{d.belgeno}</td>
+                <td style={{ padding: "11px 16px", textAlign: "right", fontWeight: 700, color: tab === "gelir" ? "#15803d" : "#dc2626" }}>
+                  {tab === "gelir" ? "+" : "-"}₺ {d.tutar.toLocaleString("tr-TR")}
+                </td>
+                <td style={{ padding: "11px 16px", display: "flex", gap: 8 }}>
+                  <button style={{ border: "none", background: "none", color: "#94a3b8", cursor: "pointer" }}><Icon name="edit" size={14} /></button>
+                  <button style={{ border: "none", background: "none", color: "#f87171", cursor: "pointer" }}><Icon name="trash" size={14} /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={{ borderTop: "2px solid #e2e8f0", background: "#f8fafc" }}>
+              <td colSpan={4} style={{ padding: "10px 16px", fontWeight: 700, color: "#475569", fontSize: 12 }}>Toplam ({data.length} kayıt)</td>
+              <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 700, fontSize: 14, color: tab === "gelir" ? "#15803d" : "#dc2626" }}>
+                ₺ {total.toLocaleString("tr-TR")}
+              </td>
+              <td />
+            </tr>
+          </tfoot>
+        </table>
+      </Card>
+    </div>
+  );
+};
+
+// ─── ANALİZ (Gelir veya Gider) ────────────────────────────────────────────────
+const Analiz = ({ accent, tur = "gelir" }) => {
+  const isGelir = tur === "gelir";
+  const kalemler = isGelir ? DATA.gelirKalemleri : DATA.giderKalemleri;
+  const total = isGelir ? 487350 : 312800;
+  const barColors = isGelir
+    ? ["#15803d", "#22c55e", "#4ade80", "#86efac"]
+    : ["#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fecaca", "#fee2e2"];
+
+  const aylikData = DATA.gelirGider.filter(d => d.gelir > 0 || d.gider > 0);
+
+  return (
+    <div style={{ display: "flex", gap: 16 }}>
+      {/* Left: Breakdown */}
+      <div style={{ flex: 1 }}>
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{isGelir ? "Toplam Gelir" : "Toplam Gider"} (Bu Ay)</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: isGelir ? "#15803d" : "#dc2626", marginTop: 4 }}>₺ {total.toLocaleString("tr-TR")}</div>
+            </div>
+            {isGelir && (
+              <div style={{ marginLeft: "auto" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Net Kâr</div>
+                <div style={{ fontSize: 26, fontWeight: 700, color: "#2563eb", marginTop: 4 }}>₺ 174.550</div>
+              </div>
+            )}
+          </div>
+          <SectionTitle>{isGelir ? "Gelir" : "Gider"} Kalemleri</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {kalemler.map((k, i) => (
+              <div key={i}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: barColors[i % barColors.length] }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2332" }}>{k.kategori}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: parseFloat(k.degisim) > 0 ? "#15803d" : "#dc2626", fontWeight: 600 }}>{k.degisim}</span>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>{k.pay}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#1a2332", minWidth: 80, textAlign: "right" }}>₺ {k.tutar.toLocaleString("tr-TR")}</span>
+                  </div>
+                </div>
+                <ProgressBar value={parseFloat(k.pay)} color={barColors[i % barColors.length]} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Right: Trend + Donut placeholder */}
+      <div style={{ width: 260 }}>
+        <Card style={{ marginBottom: 14 }}>
+          <SectionTitle>Aylık Trend</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {aylikData.map((d, i) => {
+              const val = isGelir ? d.gelir : d.gider;
+              const maxVal = isGelir ? 500000 : 320000;
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", width: 24 }}>{d.ay}</span>
+                  <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 99, height: 8, overflow: "hidden" }}>
+                    <div style={{ width: `${(val / maxVal) * 100}%`, background: isGelir ? "#22c55e" : "#ef4444", height: "100%", borderRadius: 99 }} />
+                  </div>
+                  <span style={{ fontSize: 12, color: "#64748b", minWidth: 60, textAlign: "right" }}>₺{(val / 1000).toFixed(0)}K</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+        <Card>
+          <SectionTitle>En Yüksek Kalem</SectionTitle>
+          {kalemler.slice(0, 3).map((k, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < 2 ? "1px solid #f1f5f9" : "" }}>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: barColors[i], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11, fontWeight: 700 }}>{i + 1}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#1a2332" }}>{k.kategori}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8" }}>{k.pay}</div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ─── KULLANICI YÖNETİMİ ──────────────────────────────────────────────────────
+const KullaniciYonetimi = ({ accent }) => {
+  const [selected, setSelected] = useState(null);
+  return (
+    <div style={{ display: "flex", gap: 16 }}>
+      <div style={{ flex: 1 }}>
+        <Card padding="0">
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
+            <input placeholder="Kullanıcı ara..." style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "7px 12px", fontSize: 13, width: 220, outline: "none" }} />
+            <button style={{ marginLeft: "auto", padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, background: accent, color: "#fff", border: "none", display: "flex", alignItems: "center", gap: 6 }}>
+              <Icon name="plus" size={14} /> Yeni Kullanıcı
+            </button>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Ad Soyad", "E-posta", "Rol", "Durum", "Son Giriş", ""].map((h, i) => (
+                  <th key={i} style={{ padding: "9px 16px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "#64748b", textTransform: "uppercase" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {DATA.kullanicilar.map((u, i) => (
+                <tr key={u.id} onClick={() => setSelected(u)} style={{ borderTop: "1px solid #f1f5f9", cursor: "pointer", background: selected?.id === u.id ? "#eff6ff" : "" }}
+                  onMouseEnter={e => selected?.id !== u.id && (e.currentTarget.style.background = "#f8fafc")}
+                  onMouseLeave={e => selected?.id !== u.id && (e.currentTarget.style.background = "")}>
+                  <td style={{ padding: "11px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: accent + "22", color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                        {u.ad.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <span style={{ fontWeight: 600, color: "#1a2332" }}>{u.ad}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "11px 16px", color: "#64748b" }}>{u.email}</td>
+                  <td style={{ padding: "11px 16px", color: "#475569" }}>{u.rol}</td>
+                  <td style={{ padding: "11px 16px" }}><Badge color={u.durum === "Aktif" ? "green" : "gray"}>{u.durum}</Badge></td>
+                  <td style={{ padding: "11px 16px", color: "#94a3b8", fontSize: 12 }}>{u.sonGiris}</td>
+                  <td style={{ padding: "11px 16px" }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button style={{ border: "none", background: "none", color: "#94a3b8", cursor: "pointer" }} onClick={e => { e.stopPropagation(); setSelected(u); }}><Icon name="edit" size={14} /></button>
+                      <button style={{ border: "none", background: "none", color: "#f87171", cursor: "pointer" }} onClick={e => e.stopPropagation()}><Icon name="trash" size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </div>
+      {/* Detail Panel */}
+      {selected && (
+        <div style={{ width: 280 }}>
+          <Card>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700 }}>Kullanıcı Detayı</h3>
+              <button onClick={() => setSelected(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }}><Icon name="close" size={16} /></button>
+            </div>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: accent + "22", color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, margin: "0 auto 8px" }}>
+                {selected.ad.split(" ").map(n => n[0]).join("").slice(0, 2)}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a2332" }}>{selected.ad}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{selected.rol}</div>
+            </div>
+            {[
+              ["E-posta", selected.email],
+              ["Durum", selected.durum],
+              ["Son Giriş", selected.sonGiris],
+              ["Modüller", selected.modul.join(", ")],
+            ].map(([k, v]) => (
+              <div key={k} style={{ padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, marginBottom: 2 }}>{k}</div>
+                <div style={{ fontSize: 13, color: "#1a2332" }}>{v}</div>
+              </div>
+            ))}
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+              <button style={{ padding: "8px", borderRadius: 6, background: accent, color: "#fff", border: "none", fontWeight: 600, fontSize: 13 }}>Düzenle</button>
+              <button style={{ padding: "8px", borderRadius: 6, background: selected.durum === "Aktif" ? "#fff" : "#f0fdf4", color: selected.durum === "Aktif" ? "#dc2626" : "#15803d", border: `1px solid ${selected.durum === "Aktif" ? "#fecaca" : "#bbf7d0"}`, fontWeight: 600, fontSize: 13 }}>
+                {selected.durum === "Aktif" ? "Pasife Al" : "Aktive Et"}
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── HIZLI KAYIT ─────────────────────────────────────────────────────────────
+const HizliKayit = ({ accent }) => {
+  const [type, setType] = useState("gelir");
+  const [form, setForm] = useState({ aciklama: "", tutar: "", kategori: "", tarih: "2026-04-20", belge: "", notlar: "" });
+  const [saved, setSaved] = useState(false);
+
+  const gelirKats = ["B2B Satış", "E-Ticaret", "Servis Gelirleri", "Diğer Gelirler"];
+  const giderKats = ["Hammadde & Malzeme", "Personel Giderleri", "Lojistik & Kargo", "Kira & Faturalar", "Teknoloji & Yazılım", "Diğer Giderler"];
+  const gorevKats = ["Üretim", "E-Ticaret", "Finans", "IT", "Pazarlama"];
+  const cats = type === "gelir" ? gelirKats : type === "gider" ? giderKats : gorevKats;
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+    setForm({ aciklama: "", tutar: "", kategori: "", tarih: "2026-04-20", belge: "", notlar: "" });
+  };
+
+  const inputStyle = { border: "1px solid #e2e8f0", borderRadius: 6, padding: "9px 12px", fontSize: 13, width: "100%", outline: "none", color: "#1a2332" };
+  const labelStyle = { fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 5, display: "block" };
+
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      {saved && (
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, color: "#15803d", fontWeight: 600 }}>
+          <Icon name="check" size={18} /> Kayıt başarıyla eklendi!
+        </div>
+      )}
+      <Card>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Hızlı Kayıt</h2>
+
+        {/* Type Selector */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+          {[["gelir", "Gelir Ekle", "#15803d"], ["gider", "Gider Ekle", "#dc2626"], ["gorev", "Görev Ekle", accent]].map(([key, label, color]) => (
+            <button key={key} onClick={() => setType(key)} style={{
+              flex: 1, padding: "10px", borderRadius: 8, fontWeight: 600, fontSize: 13, border: `2px solid ${type === key ? color : "#e2e8f0"}`,
+              background: type === key ? color + "11" : "#fff", color: type === key ? color : "#94a3b8",
+            }}>{label}</button>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={labelStyle}>Açıklama *</label>
+            <input value={form.aciklama} onChange={e => setForm({ ...form, aciklama: e.target.value })}
+              placeholder={type === "gorev" ? "Görev başlığı..." : "Açıklama girin..."} style={inputStyle} />
+          </div>
+
+          {type !== "gorev" && (
+            <div>
+              <label style={labelStyle}>Tutar (₺) *</label>
+              <input value={form.tutar} onChange={e => setForm({ ...form, tutar: e.target.value })}
+                placeholder="0.00" type="number" style={inputStyle} />
+            </div>
+          )}
+
+          <div>
+            <label style={labelStyle}>Kategori</label>
+            <select value={form.kategori} onChange={e => setForm({ ...form, kategori: e.target.value })} style={{ ...inputStyle, background: "#fff" }}>
+              <option value="">Seçin...</option>
+              {cats.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Tarih *</label>
+            <input type="date" value={form.tarih} onChange={e => setForm({ ...form, tarih: e.target.value })} style={inputStyle} />
+          </div>
+
+          {type !== "gorev" && (
+            <div>
+              <label style={labelStyle}>Belge / Fatura No</label>
+              <input value={form.belge} onChange={e => setForm({ ...form, belge: e.target.value })}
+                placeholder="FAT-2024-001" style={inputStyle} />
+            </div>
+          )}
+
+          {type === "gorev" && (
+            <>
+              <div>
+                <label style={labelStyle}>Atanan Kişi</label>
+                <select style={{ ...inputStyle, background: "#fff" }}>
+                  <option value="">Seçin...</option>
+                  {DATA.kullanicilar.map(u => <option key={u.id}>{u.ad}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Öncelik</label>
+                <select style={{ ...inputStyle, background: "#fff" }}>
+                  <option>Düşük</option>
+                  <option>Orta</option>
+                  <option>Yüksek</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={labelStyle}>Notlar</label>
+            <textarea value={form.notlar} onChange={e => setForm({ ...form, notlar: e.target.value })}
+              placeholder="Ek notlar..." rows={3}
+              style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "flex-end" }}>
+          <button onClick={() => setForm({ aciklama: "", tutar: "", kategori: "", tarih: "2026-04-20", belge: "", notlar: "" })}
+            style={{ padding: "9px 20px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13 }}>
+            Temizle
+          </button>
+          <button onClick={handleSave}
+            style={{ padding: "9px 24px", borderRadius: 6, border: "none", background: type === "gelir" ? "#15803d" : type === "gider" ? "#dc2626" : accent, color: "#fff", fontWeight: 600, fontSize: 13 }}>
+            Kaydet
+          </button>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+const navItems = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard", group: null },
+  { id: "gorevler", label: "Görevler", icon: "tasks", group: "Operasyon" },
+  { id: "takvim", label: "Genel Takvim", icon: "calendar", group: "Operasyon" },
+  { id: "finans-takvim", label: "Finans Takvimi", icon: "financeCalendar", group: "Finans" },
+  { id: "gelir-gider", label: "Gelir-Gider Yön.", icon: "finance", group: "Finans" },
+  { id: "gelir-analiz", label: "Gelir Analizi", icon: "income", group: "Finans" },
+  { id: "gider-analiz", label: "Gider Analizi", icon: "expense", group: "Finans" },
+  { id: "kullanicilar", label: "Kullanıcı Yönetimi", icon: "users", group: "Yönetim" },
+  { id: "hizli-kayit", label: "Hızlı Kayıt", icon: "quickadd", group: "Yönetim" },
+];
+
+const Sidebar = ({ active, setActive, accent, sidebarDark }) => {
+  const bg = sidebarDark ? "#1e2d40" : "#fff";
+  const textColor = sidebarDark ? "#94a3b8" : "#64748b";
+  const textHover = sidebarDark ? "#e2e8f0" : "#1a2332";
+  const groupColor = sidebarDark ? "#4a6080" : "#94a3b8";
+  const border = sidebarDark ? "#2a3f55" : "#f1f5f9";
+  const activeBg = sidebarDark ? accent + "33" : "#eff6ff";
+  const activeText = accent;
+
+  const groups = ["", "Operasyon", "Finans", "Yönetim"];
+  const grouped = groups.map(g => ({ group: g, items: navItems.filter(n => (n.group || "") === g) }));
+
+  return (
+    <div style={{ width: 220, background: bg, borderRight: `1px solid ${border}`, display: "flex", flexDirection: "column", height: "100vh", position: "fixed", top: 0, left: 0, zIndex: 10, overflowY: "auto" }}>
+      {/* Logo */}
+      <div style={{ padding: "20px 18px 16px", borderBottom: `1px solid ${border}` }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: sidebarDark ? "#e2e8f0" : "#1a2332", letterSpacing: "-0.02em" }}>
+          <span style={{ color: accent }}>●</span> ŞirketPanel
+        </div>
+        <div style={{ fontSize: 11, color: groupColor, marginTop: 2 }}>Yönetim Sistemi v2.4</div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "12px 0" }}>
+        {grouped.map(({ group, items }) => (
+          <div key={group}>
+            {group && <div style={{ padding: "10px 18px 4px", fontSize: 10, fontWeight: 700, color: groupColor, textTransform: "uppercase", letterSpacing: "0.1em" }}>{group}</div>}
+            {items.map(item => (
+              <button key={item.id} onClick={() => setActive(item.id)} style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 18px",
+                background: active === item.id ? activeBg : "none",
+                color: active === item.id ? activeText : textColor,
+                border: "none", textAlign: "left", fontSize: 13, fontWeight: active === item.id ? 600 : 500,
+                borderLeft: `3px solid ${active === item.id ? accent : "transparent"}`,
+                cursor: "pointer", transition: "all 0.1s",
+              }}
+                onMouseEnter={e => active !== item.id && (e.currentTarget.style.color = textHover)}
+                onMouseLeave={e => active !== item.id && (e.currentTarget.style.color = textColor)}>
+                <Icon name={item.icon} size={15} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Bottom */}
+      <div style={{ padding: "14px 18px", borderTop: `1px solid ${border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: accent, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>AY</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: sidebarDark ? "#e2e8f0" : "#1a2332", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Ahmet Yılmaz</div>
+            <div style={{ fontSize: 10, color: groupColor }}>Yönetici</div>
+          </div>
+          <button style={{ border: "none", background: "none", color: groupColor, cursor: "pointer" }}><Icon name="logout" size={14} /></button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── TOPBAR ──────────────────────────────────────────────────────────────────
+const Topbar = ({ title, accent }) => (
+  <div style={{ height: 56, background: "#fff", borderBottom: "1px solid #e5eaf0", display: "flex", alignItems: "center", padding: "0 24px", gap: 12, position: "sticky", top: 0, zIndex: 5 }}>
+    <h1 style={{ fontSize: 15, fontWeight: 700, color: "#1a2332", flex: 1 }}>{title}</h1>
+    <div style={{ position: "relative" }}>
+      <input placeholder="Ara..." style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: "6px 12px 6px 32px", fontSize: 13, outline: "none", width: 200, color: "#1a2332" }} />
+      <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}><Icon name="search" size={14} /></span>
+    </div>
+    <div style={{ position: "relative" }}>
+      <button style={{ border: "none", background: "none", color: "#64748b", cursor: "pointer", padding: 6, borderRadius: 6 }}><Icon name="bell" size={18} /></button>
+      <div style={{ position: "absolute", top: 6, right: 6, width: 8, height: 8, background: "#ef4444", borderRadius: "50%" }} />
+    </div>
+    <div style={{ fontSize: 12, color: "#94a3b8" }}>20 Nisan 2026, Pzt</div>
+  </div>
+);
+
+// ─── TWEAKS PANEL ─────────────────────────────────────────────────────────────
+const TweaksPanel = ({ tweaks, setTweaks, visible }) => {
+  if (!visible) return null;
+  const accentOptions = [
+    { label: "Mavi", val: "#2563eb" },
+    { label: "Yeşil", val: "#16a34a" },
+    { label: "Mor", val: "#7c3aed" },
+    { label: "Turuncu", val: "#ea580c" },
+  ];
+  return (
+    <div style={{ position: "fixed", bottom: 20, right: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 18, width: 220, zIndex: 100, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "#1a2332", marginBottom: 14 }}>Tweaks</div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>Aksan Rengi</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {accentOptions.map(o => (
+            <div key={o.val} onClick={() => { setTweaks(t => ({ ...t, accentColor: o.val })); window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { accentColor: o.val } }, "*"); }}
+              style={{ width: 28, height: 28, borderRadius: 6, background: o.val, cursor: "pointer", border: tweaks.accentColor === o.val ? "2px solid #1a2332" : "2px solid transparent" }} title={o.label} />
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>Sidebar Rengi</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[["Koyu", true], ["Açık", false]].map(([label, val]) => (
+            <button key={label} onClick={() => { setTweaks(t => ({ ...t, sidebarDark: val })); window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { sidebarDark: val } }, "*"); }}
+              style={{ flex: 1, padding: "5px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600, border: "1px solid", background: tweaks.sidebarDark === val ? "#1e2d40" : "#fff", color: tweaks.sidebarDark === val ? "#fff" : "#475569", borderColor: tweaks.sidebarDark === val ? "#1e2d40" : "#e2e8f0", cursor: "pointer" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6, textTransform: "uppercase" }}>Tablo Yoğunluğu</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[["Normal", false], ["Kompakt", true]].map(([label, val]) => (
+            <button key={label} onClick={() => { setTweaks(t => ({ ...t, tableCompact: val })); window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { tableCompact: val } }, "*"); }}
+              style={{ flex: 1, padding: "5px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600, border: "1px solid", background: tweaks.tableCompact === val ? tweaks.accentColor : "#fff", color: tweaks.tableCompact === val ? "#fff" : "#475569", borderColor: tweaks.tableCompact === val ? tweaks.accentColor : "#e2e8f0", cursor: "pointer" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── PAGE TITLES ─────────────────────────────────────────────────────────────
+const titles = {
+  dashboard: "Dashboard",
+  gorevler: "Görevler",
+  takvim: "Genel Takvim",
+  "finans-takvim": "Finans Takvimi",
+  "gelir-gider": "Gelir-Gider Yönetimi",
+  "gelir-analiz": "Gelir Analizi",
+  "gider-analiz": "Gider Analizi",
+  kullanicilar: "Kullanıcı Yönetimi",
+  "hizli-kayit": "Hızlı Kayıt",
+};
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+const App = () => {
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("panel_state") || "{}"); } catch { return {}; } })();
+  const [active, setActive] = useState(saved.active || "dashboard");
+  const [tweaks, setTweaks] = useState({ ...TWEAK_DEFAULTS, ...saved.tweaks });
+  const [tweakVisible, setTweakVisible] = useState(false);
+
+  useEffect(() => { localStorage.setItem("panel_state", JSON.stringify({ active, tweaks })); }, [active, tweaks]);
+
+  useEffect(() => {
+    window.addEventListener("message", e => {
+      if (e.data?.type === "__activate_edit_mode") setTweakVisible(true);
+      if (e.data?.type === "__deactivate_edit_mode") setTweakVisible(false);
+    });
+    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
+  }, []);
+
+  const accent = tweaks.accentColor;
+
+  const renderContent = () => {
+    switch (active) {
+      case "dashboard": return <Dashboard accent={accent} />;
+      case "gorevler": return <Gorevler accent={accent} />;
+      case "takvim": return <Takvim accent={accent} />;
+      case "finans-takvim": return <Takvim accent={accent} finans />;
+      case "gelir-gider": return <GelirGiderYonetim accent={accent} />;
+      case "gelir-analiz": return <Analiz accent={accent} tur="gelir" />;
+      case "gider-analiz": return <Analiz accent={accent} tur="gider" />;
+      case "kullanicilar": return <KullaniciYonetimi accent={accent} />;
+      case "hizli-kayit": return <HizliKayit accent={accent} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", height: "100vh", background: "#f0f2f5" }}>
+      <Sidebar active={active} setActive={setActive} accent={accent} sidebarDark={tweaks.sidebarDark} />
+      <div style={{ marginLeft: 220, flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "auto" }}>
+        <Topbar title={titles[active]} accent={accent} />
+        <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+          {renderContent()}
+        </div>
+      </div>
+      <TweaksPanel tweaks={tweaks} setTweaks={setTweaks} visible={tweakVisible} />
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
