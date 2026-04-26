@@ -136,6 +136,28 @@ export default function ProductionDashboard() {
         </div>
       </div>
 
+      {/* Quick Navigation */}
+      <div className="flex flex-wrap gap-3">
+        <Link href="/production/products" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <Package className="w-4 h-4" /> Ürünler & Reçeteler
+        </Link>
+        <Link href="/production/raw-materials" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <Factory className="w-4 h-4" /> Hammaddeler
+        </Link>
+        <Link href="/production/machines" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <Truck className="w-4 h-4" /> Makineler
+        </Link>
+        <Link href="/production/purchase-requests" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <AlertTriangle className="w-4 h-4" /> Satın Alma Talepleri
+        </Link>
+        <Link href="/production/calendar" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <Clock className="w-4 h-4" /> Üretim Takvimi
+        </Link>
+        <Link href="/production/reports" className="bg-white border border-slate-100 text-slate-600 hover:text-blue-600 hover:border-blue-200 text-[11px] font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
+          <CheckCircle className="w-4 h-4" /> Raporlar
+        </Link>
+      </div>
+
       {/* Grid Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[

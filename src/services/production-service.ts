@@ -170,6 +170,67 @@ export const ProductionService = {
   },
 
   // --- MUTATIONS ---
+  async createRawMaterial(material: Partial<RawMaterial>) {
+    const { data, error } = await supabase.from("raw_materials").insert([material]).select();
+    if (error) throw new Error(`raw_materials: ${error.message}`);
+    return data?.[0];
+  },
+  async updateRawMaterial(id: string, updates: Partial<RawMaterial>) {
+    const { error } = await supabase.from("raw_materials").update(updates).eq("id", id);
+    if (error) throw new Error(`raw_materials: ${error.message}`);
+  },
+  async deleteRawMaterial(id: string) {
+    const { error } = await supabase.from("raw_materials").delete().eq("id", id);
+    if (error) throw new Error(`raw_materials: ${error.message}`);
+  },
+
+  async createMachine(machine: Partial<Machine>) {
+    const { data, error } = await supabase.from("machines").insert([machine]).select();
+    if (error) throw new Error(`machines: ${error.message}`);
+    return data?.[0];
+  },
+  async updateMachine(id: string, updates: Partial<Machine>) {
+    const { error } = await supabase.from("machines").update(updates).eq("id", id);
+    if (error) throw new Error(`machines: ${error.message}`);
+  },
+  async deleteMachine(id: string) {
+    const { error } = await supabase.from("machines").delete().eq("id", id);
+    if (error) throw new Error(`machines: ${error.message}`);
+  },
+
+  async createProduct(product: Partial<Product>) {
+    const { data, error } = await supabase.from("products").insert([product]).select();
+    if (error) throw new Error(`products: ${error.message}`);
+    return data?.[0];
+  },
+  async updateProduct(id: string, updates: Partial<Product>) {
+    const { error } = await supabase.from("products").update(updates).eq("id", id);
+    if (error) throw new Error(`products: ${error.message}`);
+  },
+  async deleteProduct(id: string) {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) throw new Error(`products: ${error.message}`);
+  },
+
+  async createProductRecipe(recipe: any) {
+    const { data, error } = await supabase.from("product_recipes").insert([recipe]).select();
+    if (error) throw new Error(`product_recipes: ${error.message}`);
+    return data?.[0];
+  },
+  async deleteProductRecipe(id: string) {
+    const { error } = await supabase.from("product_recipes").delete().eq("id", id);
+    if (error) throw new Error(`product_recipes: ${error.message}`);
+  },
+
+  async updatePurchaseRequestStatus(id: string, status: string) {
+    const { error } = await supabase.from("purchase_requests").update({ status }).eq("id", id);
+    if (error) throw new Error(`purchase_requests: ${error.message}`);
+  },
+  async deletePurchaseRequest(id: string) {
+    const { error } = await supabase.from("purchase_requests").delete().eq("id", id);
+    if (error) throw new Error(`purchase_requests: ${error.message}`);
+  },
+
   async createOrder(order: Partial<ProductionOrder>) {
     const { data, error } = await supabase
       .from("production_orders")
