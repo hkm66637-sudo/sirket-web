@@ -9,16 +9,51 @@ export default function ProductionCalendarPage() {
   const { profile } = useAuth();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile?.company_id) return;
-    ProductionService.getOrders(profile.company_id).then(data => {
-      setOrders(data.filter(o => o.target_date));
-      setLoading(false);
-    });
+    let isMounted = true;
+    let timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+        setError("Veri yükleme zaman aşımına uğradı");
+      }
+    }, 8000);
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!profile?.company_id) {
+          return;
+        }
+        const data = await ProductionService.getOrders(profile.company_id);
+        console.log("Page data:", data);
+        if (isMounted) {
+          setOrders((data || []).filter(o => o.target_date));
+        }
+      } catch (error: any) {
+        console.error("Page fetch error:", error);
+        if (isMounted) {
+          setError(error.message || "Veri alınamadı");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+        clearTimeout(timer);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [profile]);
 
   if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse mt-20">Takvim Yükleniyor...</div>;
+  if (error) return <div className="p-8 text-red-500 font-bold text-center mt-20">{error}</div>;
 
   // Group by date
   const grouped: Record<string, ProductionOrder[]> = {};

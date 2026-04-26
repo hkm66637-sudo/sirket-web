@@ -23,25 +23,56 @@ export default function MachinesPage() {
     last_maintenance_date: ""
   });
 
+  useEffect(() => {
+    let isMounted = true;
+    let timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+        setError("Veri yükleme zaman aşımına uğradı");
+      }
+    }, 8000);
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!profile?.company_id) {
+          return;
+        }
+        const data = await ProductionService.getMachines(profile.company_id);
+        console.log("Page data:", data);
+        if (isMounted) {
+          setMachines(data || []);
+        }
+      } catch (error: any) {
+        console.error("Page fetch error:", error);
+        if (isMounted) {
+          setError(error.message || "Veri alınamadı");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+        clearTimeout(timer);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [profile]);
+
   const loadData = async () => {
     if (!profile?.company_id) return;
-    setLoading(true);
     try {
-      const data = await Promise.race([
-        ProductionService.getMachines(profile.company_id),
-        new Promise<Machine[]>((_, r) => setTimeout(() => r(new Error("Zaman aşımı.")), 8000))
-      ]);
-      setMachines(data);
+      const data = await ProductionService.getMachines(profile.company_id);
+      setMachines(data || []);
     } catch (err: any) {
-      setError(err.message || "Hata oluştu.");
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

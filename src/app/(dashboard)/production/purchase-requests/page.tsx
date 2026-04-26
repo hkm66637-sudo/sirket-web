@@ -12,25 +12,56 @@ export default function PurchaseRequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  useEffect(() => {
+    let isMounted = true;
+    let timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+        setError("Veri yükleme zaman aşımına uğradı");
+      }
+    }, 8000);
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!profile?.company_id) {
+          return;
+        }
+        const data = await ProductionService.getPurchaseRequests(profile.company_id);
+        console.log("Page data:", data);
+        if (isMounted) {
+          setRequests(data || []);
+        }
+      } catch (error: any) {
+        console.error("Page fetch error:", error);
+        if (isMounted) {
+          setError(error.message || "Veri alınamadı");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+        clearTimeout(timer);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [profile]);
+
   const loadData = async () => {
     if (!profile?.company_id) return;
-    setLoading(true);
     try {
-      const data = await Promise.race([
-        ProductionService.getPurchaseRequests(profile.company_id),
-        new Promise<any[]>((_, r) => setTimeout(() => r(new Error("Zaman aşımı.")), 8000))
-      ]);
-      setRequests(data);
+      const data = await ProductionService.getPurchaseRequests(profile.company_id);
+      setRequests(data || []);
     } catch (err: any) {
-      setError(err.message || "Hata oluştu.");
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [profile]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {

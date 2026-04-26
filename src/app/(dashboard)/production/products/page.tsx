@@ -25,9 +25,55 @@ export default function ProductsPage() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [newRecipeItem, setNewRecipeItem] = useState({ raw_material_id: "", quantity_per_unit: 1, fire_rate_percent: 0 });
 
+  useEffect(() => {
+    let isMounted = true;
+    let timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+        setError("Veri yükleme zaman aşımına uğradı");
+      }
+    }, 8000);
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!profile?.company_id) {
+          return;
+        }
+        const [prodRes, machRes, rawRes] = await Promise.all([
+          ProductionService.getProducts(profile.company_id),
+          ProductionService.getMachines(profile.company_id),
+          ProductionService.getRawMaterials(profile.company_id)
+        ]);
+        console.log("Page data:", { prodRes, machRes, rawRes });
+        if (isMounted) {
+          setProducts(prodRes || []);
+          setMachines(machRes || []);
+          setRawMaterials(rawRes || []);
+        }
+      } catch (error: any) {
+        console.error("Page fetch error:", error);
+        if (isMounted) {
+          setError(error.message || "Veri alınamadı");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+        clearTimeout(timer);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [profile]);
+
   const loadData = async () => {
     if (!profile?.company_id) return;
-    setLoading(true);
     try {
       const [prodRes, machRes, rawRes] = await Promise.all([
         ProductionService.getProducts(profile.company_id),
@@ -38,15 +84,9 @@ export default function ProductsPage() {
       setMachines(machRes);
       setRawMaterials(rawRes);
     } catch (err: any) {
-      setError(err.message || "Hata oluştu.");
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [profile]);
 
   // -- PRODUCT ACTIONS --
   const handleProductSubmit = async (e: React.FormEvent) => {
