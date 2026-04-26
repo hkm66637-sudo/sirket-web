@@ -1,15 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import { Settings as SettingsIcon, User, Bell, Shield, Save } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Settings as SettingsIcon, User, Bell, Shield, Save, X } from "lucide-react";
 import FormField from "@/components/ui/form-field";
 import Input from "@/components/ui/input";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function SettingsPage() {
+  const { user, profile: authProfile, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [profile, setProfile] = useState({
-    name: "Ahmet Yılmaz",
-    email: "ahmet@sirket.com",
-    role: "Yönetici"
+    name: "",
+    email: "",
+    role: ""
   });
 
   const [notifications, setNotifications] = useState({
@@ -17,6 +23,29 @@ export default function SettingsPage() {
     sms: false,
     system: true
   });
+
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/auth/login");
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (authProfile || user) {
+      setProfile({
+        name: authProfile?.full_name || user?.user_metadata?.full_name || "Bilgi bulunamadı",
+        email: user?.email || authProfile?.email || "Bilgi bulunamadı",
+        role: authProfile?.role || authProfile?.access_scope || "Bilgi bulunamadı"
+      });
+    }
+  }, [authProfile, user]);
 
   const handleSave = () => {
     alert("Ayarlar başarıyla kaydedildi! (Simülasyon)");
@@ -127,7 +156,16 @@ export default function SettingsPage() {
             <Shield className="w-4 h-4 text-blue-500" /> Güvenlik
           </h3>
           <div className="space-y-4 flex-1">
-            <button className="w-full text-left p-4 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-slate-50 transition-colors">
+            <button 
+              onClick={() => {
+                setIsPasswordModalOpen(true);
+                setPasswordError("");
+                setPasswordSuccess("");
+                setNewPassword("");
+                setConfirmPassword("");
+              }}
+              className="w-full text-left p-4 rounded-2xl bg-slate-50/50 border border-slate-100 hover:bg-slate-50 transition-colors"
+            >
               <p className="text-sm font-bold text-slate-800">Şifre Değiştir</p>
               <p className="text-xs text-slate-400">Hesap güvenliğiniz için düzenli güncelleyin</p>
             </button>
@@ -139,6 +177,112 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full mx-4 shadow-2xl border border-slate-100 relative animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setIsPasswordModalOpen(false)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" /> Şifre Değiştir
+              </h3>
+              <p className="text-slate-400 text-xs font-medium mt-1">Hesabınız için yeni bir şifre belirleyin.</p>
+            </div>
+
+            {passwordError && (
+              <div className="bg-red-50 text-red-600 border border-red-100 p-3 rounded-xl text-xs font-semibold mb-4 text-center">
+                {passwordError}
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="bg-green-50 text-green-600 border border-green-100 p-3 rounded-xl text-xs font-semibold mb-4 text-center">
+                {passwordSuccess}
+              </div>
+            )}
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setPasswordError("");
+              setPasswordSuccess("");
+
+              if (newPassword.length < 6) {
+                setPasswordError("Şifre en az 6 karakter olmalı.");
+                return;
+              }
+
+              if (newPassword !== confirmPassword) {
+                setPasswordError("Şifreler eşleşmiyor.");
+                return;
+              }
+
+              setIsSubmitting(true);
+              try {
+                const { error } = await supabase.auth.updateUser({ password: newPassword });
+                if (error) {
+                  setPasswordError(error.message);
+                } else {
+                  setPasswordSuccess("Şifre başarıyla güncellendi.");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setTimeout(() => setIsPasswordModalOpen(false), 2000);
+                }
+              } catch (err: any) {
+                setPasswordError(err.message || "Bilinmeyen bir hata oluştu.");
+              } finally {
+                setIsSubmitting(false);
+              }
+            }} className="space-y-4">
+              <FormField label="Yeni Şifre">
+                <Input 
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••"
+                  required
+                  className="w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </FormField>
+
+              <FormField label="Yeni Şifre (Tekrar)">
+                <Input 
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••"
+                  required
+                  className="w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </FormField>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors"
+                  disabled={isSubmitting}
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
