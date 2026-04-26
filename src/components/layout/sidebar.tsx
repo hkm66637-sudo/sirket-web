@@ -17,7 +17,10 @@ import {
   Building2,
   Tag,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  ShoppingCart,
+  Package,
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
@@ -65,6 +68,14 @@ const Sidebar = () => {
     ],
     production: [
       { name: "Üretim Dashboard", href: "/production", icon: LayoutDashboard, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "depo_yoneticisi", "depo_personeli"] },
+      { name: "Siparişler / İş Emirleri", href: "/production/orders", icon: ShoppingCart, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "finans", "muhasebe_muduru"] },
+      { name: "Ürünler", href: "/production/products", icon: Package, roles: ["super_admin", "admin", "uretim_muduru"] },
+      { name: "Reçeteler", href: "/production/products", icon: Layers, roles: ["super_admin", "admin", "uretim_muduru"] },
+      { name: "Hammaddeler", href: "/production/raw-materials", icon: Tag, roles: ["super_admin", "admin", "uretim_muduru", "depo_yoneticisi"] },
+      { name: "Makineler", href: "/production/machines", icon: Building2, roles: ["super_admin", "admin", "uretim_muduru"] },
+      { name: "Satın Alma Talepleri", href: "/production/purchase-requests", icon: HelpCircle, roles: ["super_admin", "admin", "uretim_muduru", "finans"] },
+      { name: "Üretim Takvimi", href: "/production/calendar", icon: Calendar, roles: ["super_admin", "admin", "uretim_muduru"] },
+      { name: "Raporlar", href: "/production/reports", icon: BarChart3, roles: ["super_admin", "admin", "uretim_muduru"] },
       { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
     ]
   };
