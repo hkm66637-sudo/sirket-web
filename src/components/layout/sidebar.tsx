@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -14,10 +14,10 @@ import {
   Wallet,
   Settings,
   HelpCircle,
-  Package,
   Building2,
   Tag,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
@@ -25,84 +25,53 @@ import CompanySelector from "./CompanySelector";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { profile } = useAuth();
 
-  const menuItems = [
-    { 
-      name: "Dashboard", 
-      href: "/", 
-      icon: LayoutDashboard, 
-      roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Görevler", 
-      href: "/tasks", 
-      icon: CheckSquare, 
-      roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] 
-    },
-    { 
-      name: "Genel Takvim", 
-      href: "/calendar/general", 
-      icon: Calendar, 
-      roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Finans", 
-      href: "/finance/transactions", 
-      icon: Wallet, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru", "muhasebe_personeli"] 
-    },
-    { 
-      name: "Banka Yönetimi", 
-      href: "/finance/banks", 
-      icon: Building2, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Ortak Cari Hesapları", 
-      href: "/finance/partners", 
-      icon: Users, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Kategori Yönetimi", 
-      href: "/finance/categories", 
-      icon: Tag, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Gelir Analizi", 
-      href: "/finance/income-analysis", 
-      icon: TrendingUp, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Gider Analizi", 
-      href: "/finance/expense-analysis", 
-      icon: TrendingDown, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Kar / Zarar Analizi", 
-      href: "/finance/profit-loss", 
-      icon: BarChart3, 
-      roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] 
-    },
-    { 
-      name: "Kullanıcı Yönetimi", 
-      href: "/users", 
-      icon: Users, 
-      roles: ["super_admin", "admin"] 
-    },
-    { 
-      name: "Hızlı Kayıt", 
-      href: "/quick-add", 
-      icon: PlusCircle, 
-      roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] 
-    },
-  ];
+  const getActiveModule = (role: string | undefined): 'finance' | 'ecommerce' | 'production' | 'none' => {
+    if (!role) return 'none';
+    if (role === 'admin' || role === 'super_admin') {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('active_module') : null;
+      if (stored === 'finance' || stored === 'ecommerce' || stored === 'production') {
+        return stored;
+      }
+      return 'none';
+    }
+    if (['eticaret_yoneticisi', 'eticaret_personeli'].includes(role)) return 'ecommerce';
+    if (['uretim_muduru', 'uretim_personeli', 'depo_yoneticisi', 'depo_personeli'].includes(role)) return 'production';
+    return 'finance';
+  };
 
-  const filteredMenu = menuItems.filter(item => 
+  const activeModule = getActiveModule(profile?.role);
+
+  const moduleMenus = {
+    finance: [
+      { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] },
+      { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
+      { name: "Genel Takvim", href: "/calendar/general", icon: Calendar, roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] },
+      { name: "Finans", href: "/finance/transactions", icon: Wallet, roles: ["super_admin", "admin", "finans", "muhasebe_muduru", "muhasebe_personeli"] },
+      { name: "Banka Yönetimi", href: "/finance/banks", icon: Building2, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Ortak Cari Hesapları", href: "/finance/partners", icon: Users, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Kategori Yönetimi", href: "/finance/categories", icon: Tag, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Gelir Analizi", href: "/finance/income-analysis", icon: TrendingUp, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Gider Analizi", href: "/finance/expense-analysis", icon: TrendingDown, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Kar / Zarar Analizi", href: "/finance/profit-loss", icon: BarChart3, roles: ["super_admin", "admin", "finans", "muhasebe_muduru"] },
+      { name: "Kullanıcı Yönetimi", href: "/users", icon: Users, roles: ["super_admin", "admin"] },
+      { name: "Hızlı Kayıt", href: "/quick-add", icon: PlusCircle, roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] },
+    ],
+    ecommerce: [
+      { name: "E-Ticaret Dashboard", href: "/ecommerce", icon: LayoutDashboard, roles: ["super_admin", "admin", "eticaret_yoneticisi", "eticaret_personeli"] },
+      { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
+    ],
+    production: [
+      { name: "Üretim Dashboard", href: "/production", icon: LayoutDashboard, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "depo_yoneticisi", "depo_personeli"] },
+      { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
+    ]
+  };
+
+  const currentMenu = activeModule !== 'none' ? moduleMenus[activeModule] : [];
+
+  const filteredMenu = currentMenu.filter(item => 
     profile?.role ? item.roles.includes(profile.role) : false
   );
 
@@ -155,6 +124,18 @@ const Sidebar = () => {
       <div className="p-6 pt-4 border-t border-slate-800 bg-slate-900/50">
         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-1">Sistem</p>
         <div className="space-y-1">
+          {(profile?.role === 'super_admin' || profile?.role === 'admin') && (
+            <button
+              onClick={() => {
+                localStorage.removeItem('active_module');
+                router.push('/module-selection');
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all text-blue-400 hover:text-white hover:bg-slate-800 w-full text-left group"
+            >
+              <RefreshCw className="w-5 h-5 transition-transform group-hover:rotate-180 duration-500 text-blue-400" />
+              Modül Değiştir
+            </button>
+          )}
           <Link 
             href="/settings" 
             className={cn(
