@@ -70,6 +70,8 @@ export interface Machine {
   status: 'active' | 'maintenance' | 'broken';
   last_maintenance_date?: string;
   description?: string;
+  machine_type?: string;
+  mold_count?: number;
 }
 
 export interface ProductionOrder {

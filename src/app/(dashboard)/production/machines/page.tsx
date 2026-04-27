@@ -11,6 +11,7 @@ export default function MachinesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,17 +77,36 @@ export default function MachinesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id) return;
+    if (!profile?.company_id) {
+      alert("Şirket seçimi yüklenemedi.");
+      return;
+    }
+
+    const moldCount = Number((formData as any).mold_count || 0);
+    if (!moldCount || moldCount <= 0) {
+      alert("Kalıp sayısı sıfırdan büyük bir sayı olmalıdır.");
+      return;
+    }
+
     try {
+      setSaving(true);
+      const payload = {
+        ...formData,
+        mold_count: moldCount,
+        company_id: profile.company_id
+      };
+
       if (editingId) {
-        await ProductionService.updateMachine(editingId, formData);
+        await ProductionService.updateMachine(editingId, payload);
       } else {
-        await ProductionService.createMachine({ ...formData, company_id: profile.company_id } as Machine);
+        await ProductionService.createMachine(payload as Machine);
       }
       setIsModalOpen(false);
       loadData();
     } catch (err: any) {
-      alert("Hata: " + err.message);
+      alert("Hata: " + (err.message || "Bilinmeyen bir hata oluştu"));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -202,6 +222,38 @@ export default function MachinesPage() {
                   <input type="text" value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" placeholder="Örn: CNC Torna" />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">MAKİNE TÜRÜ</label>
+                  <select 
+                    value={(formData as any).machine_type || ""} 
+                    onChange={e => setFormData({ ...formData, machine_type: e.target.value })} 
+                    required 
+                    className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Seçiniz</option>
+                    <option value="Poliüretan Makinası">Poliüretan Makinası</option>
+                    <option value="Eva Makinası">Eva Makinası</option>
+                    <option value="Etiket Makinası">Etiket Makinası</option>
+                    <option value="Laminasyon Makinası">Laminasyon Makinası</option>
+                    <option value="Sünger Baskı Makinası">Sünger Baskı Makinası</option>
+                    <option value="Dijital Baskı Makinası">Dijital Baskı Makinası</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">KALIP SAYISI</label>
+                  <input 
+                    type="number" 
+                    step="1" 
+                    value={(formData as any).mold_count || ""} 
+                    onChange={e => setFormData({ ...formData, mold_count: parseInt(e.target.value) })} 
+                    required 
+                    className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                    placeholder="Örn: 4" 
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">KAPASİTE (Adet/Saat)</label>
