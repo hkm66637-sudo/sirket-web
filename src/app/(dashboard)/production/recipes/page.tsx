@@ -25,7 +25,7 @@ export default function RecipesPage() {
         setLoading(false);
         setError("Veri yükleme zaman aşımına uğradı");
       }
-    }, 12000);
+    }, 15000);
 
     const fetchData = async () => {
       if (!profile?.company_id) return;
@@ -44,7 +44,12 @@ export default function RecipesPage() {
       } catch (err: any) {
         console.error("Recipe load error:", err);
         if (isMounted) {
-          setError(err.message || "Reçeteler alınamadı");
+          const msg = err.message || "";
+          if (msg.includes("relation") && msg.includes("does not exist")) {
+            setError("Reçete tablosu bulunamadı. Veritabanı migration çalıştırılmalı.");
+          } else {
+            setError(msg || "Reçeteler veya ürünler alınamadı");
+          }
         }
       } finally {
         if (isMounted) {
@@ -180,7 +185,7 @@ export default function RecipesPage() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-12 text-slate-400 font-semibold">Reçete bulunamadı.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={5} className="text-center py-12 text-slate-400 font-semibold">Henüz reçete bulunmuyor.</td></tr>}
             </tbody>
           </table>
         </div>
