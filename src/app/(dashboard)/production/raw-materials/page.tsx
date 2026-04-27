@@ -10,6 +10,7 @@ export default function RawMaterialsPage() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Modal State
@@ -17,7 +18,9 @@ export default function RawMaterialsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<RawMaterial>>({
     name: "",
+    material_type: "",
     unit: "adet",
+    color: "",
     current_stock: 0,
     minimum_stock: 0,
     critical_stock: 0,
@@ -81,6 +84,7 @@ export default function RawMaterialsPage() {
     e.preventDefault();
     if (!profile?.company_id) return;
     try {
+      setSaving(true);
       if (editingId) {
         await ProductionService.updateRawMaterial(editingId, formData);
       } else {
@@ -90,8 +94,11 @@ export default function RawMaterialsPage() {
       loadData();
     } catch (err: any) {
       alert("İşlem başarısız: " + err.message);
+    } finally {
+      setSaving(false);
     }
   };
+
 
   const handleDelete = async (id: string) => {
     if (!confirm("Silmek istediğinize emin misiniz?")) return;
@@ -112,7 +119,7 @@ export default function RawMaterialsPage() {
   const openAdd = () => {
     setEditingId(null);
     setFormData({
-      name: "", unit: "adet", current_stock: 0, minimum_stock: 0, critical_stock: 0, supplier_name: "", lead_time_days: 3
+      name: "", material_type: "", unit: "adet", color: "", current_stock: 0, minimum_stock: 0, critical_stock: 0, supplier_name: "", lead_time_days: 3
     });
     setIsModalOpen(true);
   };
@@ -212,19 +219,61 @@ export default function RawMaterialsPage() {
           <div className="bg-white rounded-[2.5rem] p-8 max-w-lg w-full border border-slate-100 shadow-2xl animate-in zoom-in-95">
             <h2 className="text-xl font-extrabold text-slate-900 mb-6">{editingId ? "Hammadde Düzenle" : "Yeni Hammadde"}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE ADI</label>
-                <input type="text" value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE ADI</label>
+                  <input type="text" value={formData.name || ""} onChange={e => setFormData({ ...formData, name: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE TÜRÜ</label>
+                  <select 
+                    value={formData.material_type || ""} 
+                    onChange={e => {
+                      const mType = e.target.value;
+                      let mUnit = formData.unit || "adet";
+                      if (mType === "Eva" || mType === "Kumaş") mUnit = "metraj";
+                      else if (mType === "Poliüretan" || mType === "İzo") mUnit = "varil";
+                      setFormData({ ...formData, material_type: mType, unit: mUnit });
+                    }} 
+                    required 
+                    className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Seçiniz</option>
+                    <option value="Eva">Eva</option>
+                    <option value="Kumaş">Kumaş</option>
+                    <option value="Poliüretan">Poliüretan</option>
+                    <option value="İzo">İzo</option>
+                    <option value="Memory">Memory</option>
+                    <option value="Sünger">Sünger</option>
+                    <option value="XPE">XPE</option>
+                    <option value="Diğer">Diğer</option>
+                  </select>
+                </div>
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">BİRİM</label>
-                  <input type="text" value={formData.unit || ""} onChange={e => setFormData({ ...formData, unit: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" placeholder="adet, kg, mt" />
+                  <input type="text" value={formData.unit || ""} onChange={e => setFormData({ ...formData, unit: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" placeholder="adet, kg, mt, metraj, varil" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">FİİLİ STOK (Fiziksel)</label>
-                  <input type="number" step="0.01" value={formData.current_stock || 0} onChange={e => setFormData({ ...formData, current_stock: parseFloat(e.target.value) })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">
+                    RENK {(formData.material_type !== "Eva" && formData.material_type !== "Kumaş") && "(Opsiyonel)"}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={formData.color || ""} 
+                    onChange={e => setFormData({ ...formData, color: e.target.value })} 
+                    required={formData.material_type === "Eva" || formData.material_type === "Kumaş"} 
+                    className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                    placeholder="Örn: Siyah" 
+                  />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">FİİLİ STOK (Fiziksel)</label>
+                <input type="number" step="0.01" value={formData.current_stock || 0} onChange={e => setFormData({ ...formData, current_stock: parseFloat(e.target.value) })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -248,8 +297,10 @@ export default function RawMaterialsPage() {
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors">İptal</button>
-                <button type="submit" className="px-5 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-colors">Kaydet</button>
+                <button type="button" disabled={saving} onClick={() => setIsModalOpen(false)} className="px-5 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50">İptal</button>
+                <button type="submit" disabled={saving} className="px-5 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-colors disabled:opacity-50">
+                  {saving ? "Kaydediliyor..." : "Kaydet"}
+                </button>
               </div>
             </form>
           </div>

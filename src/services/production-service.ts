@@ -48,6 +48,8 @@ export interface RawMaterial {
   company_id: string;
   name: string;
   unit: string;
+  material_type?: string;
+  color?: string;
   current_stock: number;
   reserved_stock: number;
   minimum_stock: number;
