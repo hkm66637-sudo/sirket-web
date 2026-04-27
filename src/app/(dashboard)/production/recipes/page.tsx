@@ -94,7 +94,7 @@ export default function RecipesPage() {
       // Bağımsız sorgular (Timeout için AbortController kullanılabilir ama Supabase client direkt async)
       const productsPromise = supabase
         .from("products")
-        .select("id, name, sku, raw_material_type, product_color")
+        .select("id, name, sku")
         .eq("company_id", targetCompanyId);
 
       const recipesPromise = supabase
