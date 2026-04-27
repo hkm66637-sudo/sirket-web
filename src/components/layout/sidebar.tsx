@@ -107,9 +107,9 @@ const Sidebar = () => {
       <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
         <nav className="space-y-1">
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-3">Ana Menü</p>
-          {filteredMenu.map((item) => (
+          {filteredMenu.map((item, index) => (
             <Link 
-              key={item.href} 
+              key={`${item.href}-${index}`} 
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group relative",
