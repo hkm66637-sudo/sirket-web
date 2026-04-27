@@ -25,31 +25,52 @@ export default function RecipesPage() {
         setLoading(false);
         setError("Veri yükleme zaman aşımına uğradı");
       }
-    }, 15000);
+    }, 25000);
 
     const fetchData = async () => {
       if (!profile?.company_id) return;
       try {
         setLoading(true);
-        const [recRes, prodRes] = await Promise.all([
-          ProductionService.getProductionRecipes(profile.company_id),
-          ProductionService.getProducts(profile.company_id)
-        ]);
+        setError(null);
+        
+        let prodRes: Product[] = [];
+        try {
+          prodRes = await ProductionService.getProducts(profile.company_id);
+        } catch (prodErr: any) {
+          console.error("production_products fetch error:", prodErr);
+          if (isMounted) {
+            setError(`Ürünler yüklenemedi: ${prodErr.message}`);
+            setLoading(false);
+            return;
+          }
+        }
+
+        let recRes: ProductionRecipe[] = [];
+        try {
+          recRes = await ProductionService.getProductionRecipes();
+        } catch (recErr: any) {
+          console.error("production_recipes fetch error message:", recErr.message);
+          if (isMounted) {
+            if (recErr.message?.includes("relation") && (recErr.message?.includes("does not exist") || recErr.message?.includes("42P01"))) {
+              setError("Reçete tablosu bulunamadı. Veritabanı migration çalıştırılmalı.");
+            } else {
+              setError(`Reçeteler yüklenemedi: ${recErr.message}`);
+            }
+            setLoading(false);
+            return;
+          }
+        }
 
         if (isMounted) {
-          setRecipes(recRes || []);
-          setProducts(prodRes || []);
-          setError(null);
+          const productIds = prodRes.map(p => p.id);
+          const filteredRecipes = recRes.filter(r => productIds.includes(r.product_id));
+          setRecipes(filteredRecipes);
+          setProducts(prodRes);
         }
       } catch (err: any) {
-        console.error("Recipe load error:", err);
+        console.error("General Recipe load error:", err);
         if (isMounted) {
-          const msg = err.message || "";
-          if (msg.includes("relation") && msg.includes("does not exist")) {
-            setError("Reçete tablosu bulunamadı. Veritabanı migration çalıştırılmalı.");
-          } else {
-            setError(msg || "Reçeteler veya ürünler alınamadı");
-          }
+          setError(err.message || "Bilinmeyen veri yükleme hatası");
         }
       } finally {
         if (isMounted) {
@@ -70,10 +91,15 @@ export default function RecipesPage() {
   const loadData = async () => {
     if (!profile?.company_id) return;
     try {
-      const data = await ProductionService.getProductionRecipes(profile.company_id);
-      setRecipes(data);
+      const [prodRes, recRes] = await Promise.all([
+        ProductionService.getProducts(profile.company_id),
+        ProductionService.getProductionRecipes()
+      ]);
+      const productIds = prodRes.map(p => p.id);
+      const filteredRecipes = recRes.filter(r => productIds.includes(r.product_id));
+      setRecipes(filteredRecipes);
     } catch (err: any) {
-      console.error(err);
+      console.error("loadData error:", err);
     }
   };
 
@@ -107,7 +133,7 @@ export default function RecipesPage() {
   };
 
   const filtered = recipes.filter(r => {
-    const pName = (r as any).products?.name || "";
+    const pName = products.find(p => p.id === r.product_id)?.name || "";
     return r.recipe_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
            pName.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -171,7 +197,7 @@ export default function RecipesPage() {
             </thead>
             <tbody className="divide-y divide-slate-50 text-slate-700 text-xs font-medium">
               {filtered.map(r => {
-                const prodName = (r as any).products?.name || "Bilinmeyen Ürün";
+                const prodName = products.find(p => p.id === r.product_id)?.name || "Bilinmeyen Ürün";
                 return (
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-900">{r.recipe_name}</td>

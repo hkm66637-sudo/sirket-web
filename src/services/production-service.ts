@@ -261,17 +261,14 @@ export const ProductionService = {
     const { error } = await supabase.from("product_recipes").delete().eq("id", id);
     if (error) throw new Error(`product_recipes: ${error.message}`);
   },
-  async getProductionRecipes(companyId: string) {
+  async getProductionRecipes() {
     const { data, error } = await supabase
       .from("production_recipes")
-      .select(`
-        *,
-        products:product_id!inner(company_id, name, sku)
-      `)
-      .eq("products.company_id", companyId);
+      .select("id, product_id, recipe_name, raw_material_type, polyurethane_gram, iso_gram, fabric_type, label_type, waste_percentage, notes, created_at");
 
     if (error) {
-      console.error("production_recipes query error:", error);
+      console.error("production_recipes query error code:", error.code);
+      console.error("production_recipes query error message:", error.message);
       throw new Error(`production_recipes: ${error.message}`);
     }
     return data || [];
