@@ -18,6 +18,7 @@ export default function ProductsPage() {
   // Product Modal
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+  const [newVar, setNewVar] = useState("");
 
   // Recipe Modal
   const [recipeModalOpen, setRecipeModalOpen] = useState(false);
@@ -227,28 +228,145 @@ export default function ProductsPage() {
       {/* PRODUCT MODAL */}
       {isProductModalOpen && editingProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full border border-slate-100 shadow-2xl animate-in zoom-in-95">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-xl w-full border border-slate-100 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-extrabold text-slate-900 mb-6">{editingProduct.id ? "Ürün Düzenle" : "Yeni Ürün"}</h2>
             <form onSubmit={handleProductSubmit} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">STOK KODU (SKU)</label>
-                <input type="text" value={editingProduct.sku || ""} onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">STOK KODU (SKU) *</label>
+                  <input type="text" value={editingProduct.sku || ""} onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN ADI *</label>
+                  <input type="text" value={editingProduct.name || ""} onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN ADI</label>
-                <input type="text" value={editingProduct.name || ""} onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE TÜRÜ *</label>
+                  <select value={editingProduct.raw_material_type || ""} onChange={e => setEditingProduct({ ...editingProduct, raw_material_type: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
+                    <option value="">Seçiniz</option>
+                    <option value="Poliüretan">Poliüretan</option>
+                    <option value="Memory">Memory</option>
+                    <option value="Medikal Eva">Medikal Eva</option>
+                    <option value="Eva">Eva</option>
+                    <option value="Sünger">Sünger</option>
+                    <option value="XPE">XPE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">VARSAYILAN MAKİNE</label>
+                  <select value={editingProduct.default_machine_id || ""} onChange={e => {
+                    const macId = e.target.value || undefined;
+                    const mac = machines.find(m => m.id === macId);
+                    // Automatic default production time if we want, or keep manual
+                    setEditingProduct({ 
+                      ...editingProduct, 
+                      default_machine_id: macId
+                    });
+                  }} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
+                    <option value="">Seçiniz (Opsiyonel)</option>
+                    {machines.map(m => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">VARSAYILAN MAKİNE</label>
-                <select value={editingProduct.default_machine_id || ""} onChange={e => setEditingProduct({ ...editingProduct, default_machine_id: e.target.value || undefined })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
-                  <option value="">Seçiniz (Opsiyonel)</option>
-                  {machines.map(m => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
-                </select>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRETİM SÜRESİ (DK)</label>
+                  <input type="number" value={editingProduct.production_time_minutes || editingProduct.average_duration_minutes || 60} onChange={e => setEditingProduct({ ...editingProduct, production_time_minutes: parseInt(e.target.value), average_duration_minutes: parseInt(e.target.value) })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">GÜNLÜK ÜRETİM KAPASİTESİ</label>
+                  <input type="number" value={editingProduct.daily_production_capacity || 0} onChange={e => setEditingProduct({ ...editingProduct, daily_production_capacity: parseInt(e.target.value) })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">KALIP SAYISI</label>
+                  <input type="number" value={editingProduct.mold_count || 0} onChange={e => setEditingProduct({ ...editingProduct, mold_count: parseInt(e.target.value) })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
               </div>
+
               <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">ORTALAMA ÜRETİM SÜRESİ (DK)</label>
-                <input type="number" value={editingProduct.average_duration_minutes || 60} onChange={e => setEditingProduct({ ...editingProduct, average_duration_minutes: parseInt(e.target.value) })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">RENK BİLGİSİ</label>
+                <input type="text" placeholder="Siyah, Beyaz, Gri" value={editingProduct.color_info || ""} onChange={e => setEditingProduct({ ...editingProduct, color_info: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
               </div>
+
+              {/* Variations */}
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 block mb-1">VARYASYONLAR (BEDEN / NUMARA)</label>
+                <div className="flex gap-2 mb-2">
+                  <input 
+                    type="text" 
+                    placeholder="Örn: 38 veya M" 
+                    value={newVar} 
+                    onChange={e => setNewVar(e.target.value)} 
+                    className="flex-1 text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (!newVar.trim()) return;
+                      const currentVars = editingProduct.variations || [];
+                      if (!currentVars.includes(newVar.trim())) {
+                        setEditingProduct({ ...editingProduct, variations: [...currentVars, newVar.trim()] });
+                      }
+                      setNewVar("");
+                    }}
+                    className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200"
+                  >
+                    Ekle
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {(editingProduct.variations || []).map((v, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm">
+                      {v}
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVars = editingProduct.variations || [];
+                          setEditingProduct({ ...editingProduct, variations: currentVars.filter(item => item !== v) });
+                        }}
+                        className="text-blue-500 hover:text-blue-900 text-xs font-black ml-1"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {(editingProduct.variations || []).length === 0 && (
+                    <span className="text-[10px] text-slate-400 font-bold uppercase italic py-1">Varyasyon tanımlanmamış.</span>
+                  )}
+                </div>
+
+                {/* Hazır Setler */}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <span className="text-[10px] font-bold text-slate-400 block w-full mb-1">HAZIR VARYASYON SETLERİ</span>
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingProduct({ ...editingProduct, variations: ["S", "M", "L"] })}
+                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-blue-50 hover:text-blue-600 border border-slate-200"
+                  >
+                    S, M, L
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingProduct({ ...editingProduct, variations: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47"] })}
+                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-blue-50 hover:text-blue-600 border border-slate-200"
+                  >
+                    36 - 47
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setEditingProduct({ ...editingProduct, variations: ["36-37", "38-39", "40-41", "42-43", "44-45", "46-47"] })}
+                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-blue-50 hover:text-blue-600 border border-slate-200"
+                  >
+                    Çiftli (36-47)
+                  </button>
+                </div>
+              </div>
+
               <div className="flex gap-3 justify-end pt-4">
                 <button type="button" onClick={() => setIsProductModalOpen(false)} className="px-5 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50">İptal</button>
                 <button type="submit" className="px-5 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700">Kaydet</button>

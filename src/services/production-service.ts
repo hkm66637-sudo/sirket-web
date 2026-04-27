@@ -7,6 +7,12 @@ export interface Product {
   name: string;
   default_machine_id?: string;
   average_duration_minutes: number;
+  raw_material_type?: string;
+  production_time_minutes?: number;
+  daily_production_capacity?: number;
+  mold_count?: number;
+  color_info?: string;
+  variations?: string[];
 }
 
 export interface RawMaterial {
