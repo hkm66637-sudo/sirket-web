@@ -127,6 +127,8 @@ export default function RawMaterialsPage() {
       const payload = {
         ...formData,
         company_id: targetCompanyId,
+        supplier: formData.supplier_name || undefined,
+        supplier_name: formData.supplier_name || undefined,
         current_stock: Number(formData.current_stock || 0),
         minimum_stock: Number(formData.minimum_stock || 0),
         critical_stock: Number(formData.critical_stock || 0),
@@ -181,9 +183,12 @@ export default function RawMaterialsPage() {
     }
   };
 
-  const openEdit = (mat: RawMaterial) => {
+  const openEdit = (mat: RawMaterial & { supplier?: string }) => {
     setEditingId(mat.id);
-    setFormData(mat);
+    setFormData({
+      ...mat,
+      supplier_name: mat.supplier_name || mat.supplier || ""
+    });
     setIsModalOpen(true);
   };
 
@@ -293,7 +298,7 @@ export default function RawMaterialsPage() {
                     <td className="px-6 py-4">{mat.unit}</td>
                     <td className="px-6 py-4 font-black">{mat.current_stock}</td>
                     <td className="px-6 py-4 text-slate-400">{mat.reserved_stock || 0}</td>
-                    <td className="px-6 py-4">{mat.supplier_name || "-"}</td>
+                    <td className="px-6 py-4">{(mat as any).supplier_name || (mat as any).supplier || "-"}</td>
                     <td className="px-6 py-4">
                       <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border w-fit font-bold text-[10px] uppercase tracking-wider ${statusBg}`}>
                         {statusIcon} {statusText}
