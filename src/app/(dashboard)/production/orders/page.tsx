@@ -11,6 +11,7 @@ export default function ProductionOrdersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,27 +25,65 @@ export default function ProductionOrdersPage() {
   const [actionError, setActionError] = useState("");
 
   useEffect(() => {
-    if (profile?.company_id) {
-      loadData();
-    }
+    let isMounted = true;
+    let timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+        setError("Veri yükleme zaman aşımına uğradı");
+      }
+    }, 12000);
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!profile?.company_id) {
+          return;
+        }
+        const [o, p, m] = await Promise.all([
+          ProductionService.getOrders(profile.company_id),
+          ProductionService.getProducts(profile.company_id),
+          ProductionService.getMachines(profile.company_id),
+        ]);
+        console.log("Orders page data:", { o, p, m });
+        if (isMounted) {
+          setOrders(o || []);
+          setProducts(p || []);
+          setMachines(m || []);
+        }
+      } catch (err: any) {
+        console.error("Orders page fetch error:", err);
+        if (isMounted) {
+          setError(err.message || "İş emirleri yüklenemedi");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+        clearTimeout(timer);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [profile]);
 
   const loadData = async () => {
     if (!profile?.company_id) return;
     try {
-      setLoading(true);
       const [o, p, m] = await Promise.all([
         ProductionService.getOrders(profile.company_id),
         ProductionService.getProducts(profile.company_id),
         ProductionService.getMachines(profile.company_id),
       ]);
-      setOrders(o);
-      setProducts(p);
-      setMachines(m);
-    } catch (err) {
+      setOrders(o || []);
+      setProducts(p || []);
+      setMachines(m || []);
+    } catch (err: any) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
