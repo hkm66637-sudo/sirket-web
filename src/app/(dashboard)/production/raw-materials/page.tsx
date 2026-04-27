@@ -242,6 +242,7 @@ export default function RawMaterialsPage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                 <th className="px-6 py-4 rounded-tl-xl">Adı</th>
+                <th className="px-6 py-4">Hammadde Türü</th>
                 <th className="px-6 py-4">Birim</th>
                 <th className="px-6 py-4">Mevcut Stok</th>
                 <th className="px-6 py-4">Rezerve</th>
@@ -267,9 +268,28 @@ export default function RawMaterialsPage() {
                   statusBg = "bg-amber-50 text-amber-600 border-amber-100";
                 }
 
+                // Hammadde Türü Badge Renkleri
+                let typeBg = "bg-slate-50 text-slate-600 border-slate-100";
+                if (mat.material_type === "Poliüretan") typeBg = "bg-blue-50 text-blue-600 border-blue-100";
+                else if (mat.material_type === "Eva") typeBg = "bg-emerald-50 text-emerald-600 border-emerald-100";
+                else if (mat.material_type === "Kumaş") typeBg = "bg-amber-50 text-amber-600 border-amber-100";
+                else if (mat.material_type === "İzo") typeBg = "bg-red-50 text-red-600 border-red-100";
+                else if (mat.material_type === "XPE") typeBg = "bg-purple-50 text-purple-600 border-purple-100";
+                else if (mat.material_type === "Sünger") typeBg = "bg-teal-50 text-teal-600 border-teal-100";
+                else if (mat.material_type === "Boya") typeBg = "bg-pink-50 text-pink-600 border-pink-100";
+
                 return (
                   <tr key={mat.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-900">{mat.name}</td>
+                    <td className="px-6 py-4">
+                      {mat.material_type ? (
+                        <span className={`px-2 py-1 rounded-md border font-bold text-[10px] uppercase tracking-wider ${typeBg}`}>
+                          {mat.material_type}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td className="px-6 py-4">{mat.unit}</td>
                     <td className="px-6 py-4 font-black">{mat.current_stock}</td>
                     <td className="px-6 py-4 text-slate-400">{mat.reserved_stock || 0}</td>
