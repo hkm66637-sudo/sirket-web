@@ -20,22 +20,31 @@ export default function RecipesPage() {
 
   useEffect(() => {
     let isMounted = true;
-    let timer = setTimeout(() => {
-      if (isMounted) {
-        setLoading(false);
-        setError("Veri yükleme zaman aşımına uğradı");
-      }
-    }, 25000);
+
+    if (!profile?.company_id) {
+      return;
+    }
+
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, msg: string): Promise<T> => {
+      let timeoutId: NodeJS.Timeout;
+      const timeoutPromise = new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Timeout: ${msg}`)), ms);
+      });
+      return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+    };
 
     const fetchData = async () => {
-      if (!profile?.company_id) return;
       try {
         setLoading(true);
         setError(null);
         
         let prodRes: Product[] = [];
         try {
-          prodRes = await ProductionService.getProducts(profile.company_id);
+          prodRes = await withTimeout(
+            ProductionService.getProducts(profile.company_id!),
+            25000,
+            "getProducts query taking too long"
+          );
         } catch (prodErr: any) {
           console.error("production_products fetch error:", prodErr);
           if (isMounted) {
@@ -47,7 +56,11 @@ export default function RecipesPage() {
 
         let recRes: ProductionRecipe[] = [];
         try {
-          recRes = await ProductionService.getProductionRecipes();
+          recRes = await withTimeout(
+            ProductionService.getProductionRecipes(),
+            25000,
+            "getProductionRecipes query taking too long"
+          );
         } catch (recErr: any) {
           console.error("production_recipes fetch error message:", recErr.message);
           if (isMounted) {
@@ -76,15 +89,12 @@ export default function RecipesPage() {
         if (isMounted) {
           setLoading(false);
         }
-        clearTimeout(timer);
       }
     };
-
     fetchData();
 
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
   }, [profile]);
 
