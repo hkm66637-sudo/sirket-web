@@ -3,15 +3,18 @@
 import React, { useEffect, useState } from "react";
 import { ProductionService, Machine } from "@/services/production-service";
 import { useAuth } from "@/context/auth-context";
+import { useCompany } from "@/context/company-context";
 import { Truck, Plus, Search, Edit2, Trash2, CheckCircle2, AlertTriangle, Settings2 } from "lucide-react";
 
 export default function MachinesPage() {
   const { profile } = useAuth();
+  const { selectedCompanyId, selectedCompany, companies, setSelectedCompanyId } = useCompany();
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,6 +26,13 @@ export default function MachinesPage() {
     description: "",
     last_maintenance_date: ""
   });
+
+  // Aktif şirket seçili mi kontrol et, yoksa ilkini seç
+  useEffect(() => {
+    if (selectedCompanyId === "ALL" && companies.length > 0) {
+      setSelectedCompanyId(companies[0].id);
+    }
+  }, [selectedCompanyId, companies, setSelectedCompanyId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,11 +46,14 @@ export default function MachinesPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        if (!profile?.company_id) {
-          return;
-        }
-        const data = await ProductionService.getMachines(profile.company_id);
-        console.log("Page data:", data);
+        const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+          ? selectedCompanyId 
+          : profile?.company_id;
+
+        if (!targetCompanyId) return;
+
+        const data = await ProductionService.getMachines(targetCompanyId);
+        console.log("Page data for machines:", data);
         if (isMounted) {
           setMachines(data || []);
         }
@@ -63,12 +76,17 @@ export default function MachinesPage() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [profile]);
+  }, [profile, selectedCompanyId]);
 
   const loadData = async () => {
-    if (!profile?.company_id) return;
+    const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+      ? selectedCompanyId 
+      : profile?.company_id;
+
+    if (!targetCompanyId) return;
+
     try {
-      const data = await ProductionService.getMachines(profile.company_id);
+      const data = await ProductionService.getMachines(targetCompanyId);
       setMachines(data || []);
     } catch (err: any) {
       console.error(err);
@@ -77,14 +95,25 @@ export default function MachinesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id) {
-      alert("Şirket seçimi yüklenemedi.");
+    setFormError(null);
+
+    if (selectedCompanyId === "ALL") {
+      setFormError("Lütfen kayıt yapmadan önce tek bir şirket seçin.");
+      return;
+    }
+
+    const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+      ? selectedCompanyId 
+      : profile?.company_id;
+
+    if (!targetCompanyId) {
+      setFormError("Şirket seçimi yüklenemedi.");
       return;
     }
 
     const moldCount = Number((formData as any).mold_count || 0);
     if (!moldCount || moldCount <= 0) {
-      alert("Kalıp sayısı sıfırdan büyük bir sayı olmalıdır.");
+      setFormError("Kalıp sayısı sıfırdan büyük bir sayı olmalıdır.");
       return;
     }
 
@@ -93,7 +122,7 @@ export default function MachinesPage() {
       const payload = {
         ...formData,
         mold_count: moldCount,
-        company_id: profile.company_id
+        company_id: targetCompanyId
       };
 
       if (editingId) {
@@ -101,10 +130,23 @@ export default function MachinesPage() {
       } else {
         await ProductionService.createMachine(payload as Machine);
       }
+      
       setIsModalOpen(false);
+      
+      // Formu temizle
+      setFormData({
+        name: "",
+        code: "",
+        capacity_units_per_hour: 10,
+        status: "active",
+        description: "",
+        last_maintenance_date: ""
+      });
+      setFormError(null);
+      setEditingId(null);
       loadData();
     } catch (err: any) {
-      alert("Hata: " + (err.message || "Bilinmeyen bir hata oluştu"));
+      setFormError(err.message || "Bilinmeyen bir hata oluştu");
     } finally {
       setSaving(false);
     }
@@ -212,6 +254,12 @@ export default function MachinesPage() {
           <div className="bg-white rounded-[2.5rem] p-8 max-w-lg w-full border border-slate-100 shadow-2xl animate-in zoom-in-95">
             <h2 className="text-xl font-extrabold text-slate-900 mb-6">{editingId ? "Makine Düzenle" : "Yeni Makine"}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-4 text-xs font-semibold flex items-center gap-2 animate-in fade-in-50">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">MAKİNE KODU</label>
@@ -274,8 +322,10 @@ export default function MachinesPage() {
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors">İptal</button>
-                <button type="submit" className="px-5 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-colors">Kaydet</button>
+                <button type="button" disabled={saving} onClick={() => { setIsModalOpen(false); setFormError(null); }} className="px-5 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50">İptal</button>
+                <button type="submit" disabled={saving} className="px-5 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-colors disabled:opacity-50">
+                  {saving ? "Kaydediliyor..." : "Kaydet"}
+                </button>
               </div>
             </form>
           </div>
