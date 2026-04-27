@@ -15,6 +15,16 @@ export default function DashboardLayout({
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [timeoutHit, setTimeoutHit] = React.useState(false);
+
+  useEffect(() => {
+    let t = setTimeout(() => {
+      if (loading) {
+        setTimeoutHit(true);
+      }
+    }, 10000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const getActiveModule = (role: string | undefined): 'finance' | 'ecommerce' | 'production' | 'none' => {
     if (!role) return 'none';
@@ -66,10 +76,24 @@ export default function DashboardLayout({
     }
   }, [user, profile, loading, router, pathname]);
 
-  if (loading) {
+  if (loading && !timeoutHit) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (loading && timeoutHit) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <p className="text-sm font-bold text-slate-500">Sistem yüklenemedi. Lütfen sayfayı yenileyin.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="text-xs font-bold bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md"
+        >
+          Yenile
+        </button>
       </div>
     );
   }

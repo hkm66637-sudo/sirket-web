@@ -46,53 +46,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProfile = async (userId: string) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
+    let isMounted = true;
 
-      if (!error && data) {
-        setProfile(data as Profile);
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        
+        if (isMounted) {
+          setUser(currentUser);
+        }
+
         if (currentUser) {
-          // Await profile fetch to ensure we have data before finishing loading
           const { data, error } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", currentUser.id)
             .single();
 
-          if (!error && data) {
-            setProfile(data as Profile);
-          } else {
-            // Fallback for demo/emergencies if profiles record is missing
-            setProfile({
-              id: currentUser.id,
-              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || "Kullanıcı",
-              email: currentUser.email || "",
-              role: 'admin', 
-              access_scope: 'global',
-              status: 'active'
-            });
+          if (isMounted) {
+            if (!error && data) {
+              setProfile(data as Profile);
+            } else {
+              setProfile({
+                id: currentUser.id,
+                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || "Kullanıcı",
+                email: currentUser.email || "",
+                role: 'admin', 
+                access_scope: 'global',
+                status: 'active'
+              });
+            }
           }
-        } else {
-          setProfile(null);
+        }
+      } catch (err) {
+        console.error("Auth init error:", err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const currentUser = session?.user ?? null;
+        if (isMounted) {
+          setUser(currentUser);
         }
         
-        setLoading(false);
+        if (currentUser) {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single();
+
+          if (isMounted) {
+            if (!error && data) {
+              setProfile(data as Profile);
+            } else {
+              setProfile({
+                id: currentUser.id,
+                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || "Kullanıcı",
+                email: currentUser.email || "",
+                role: 'admin', 
+                access_scope: 'global',
+                status: 'active'
+              });
+            }
+          }
+        } else {
+          if (isMounted) {
+            setProfile(null);
+          }
+        }
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
