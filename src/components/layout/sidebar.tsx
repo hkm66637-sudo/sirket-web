@@ -70,7 +70,7 @@ const Sidebar = () => {
       { name: "Üretim Dashboard", href: "/production", icon: LayoutDashboard, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "depo_yoneticisi", "depo_personeli"] },
       { name: "Siparişler / İş Emirleri", href: "/production/orders", icon: ShoppingCart, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "finans", "muhasebe_muduru"] },
       { name: "Ürünler", href: "/production/products", icon: Package, roles: ["super_admin", "admin", "uretim_muduru"] },
-      { name: "Reçeteler", href: "/production/products", icon: Layers, roles: ["super_admin", "admin", "uretim_muduru"] },
+      { name: "Reçeteler", href: "/production/recipes", icon: Layers, roles: ["super_admin", "admin", "uretim_muduru"] },
       { name: "Hammaddeler", href: "/production/raw-materials", icon: Tag, roles: ["super_admin", "admin", "uretim_muduru", "depo_yoneticisi"] },
       { name: "Makineler", href: "/production/machines", icon: Building2, roles: ["super_admin", "admin", "uretim_muduru"] },
       { name: "Satın Alma Talepleri", href: "/production/purchase-requests", icon: HelpCircle, roles: ["super_admin", "admin", "uretim_muduru", "finans"] },

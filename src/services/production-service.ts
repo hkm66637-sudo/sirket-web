@@ -7,12 +7,40 @@ export interface Product {
   name: string;
   default_machine_id?: string;
   average_duration_minutes: number;
+  category?: string;
   raw_material_type?: string;
+  product_color?: string;
+  material_color?: string;
+  variations?: string[];
+  machine_id?: string;
+  product_label?: string;
+  image_url?: string;
+  cutting_blade_model?: string;
   production_time_minutes?: number;
   daily_production_capacity?: number;
   mold_count?: number;
-  color_info?: string;
-  variations?: string[];
+}
+
+export interface ProductionRecipe {
+  id: string;
+  product_id: string;
+  recipe_name: string;
+  raw_material_type?: string;
+  polyurethane_gram?: number;
+  iso_gram?: number;
+  memory_gram?: number;
+  eva_gram?: number;
+  sponge_gram?: number;
+  xpe_gram?: number;
+  fabric_type?: string;
+  fabric_amount?: number;
+  label_type?: string;
+  label_description?: string;
+  adhesive_material?: string;
+  waste_percentage?: number;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RawMaterial {
@@ -233,7 +261,37 @@ export const ProductionService = {
     const { error } = await supabase.from("product_recipes").delete().eq("id", id);
     if (error) throw new Error(`product_recipes: ${error.message}`);
   },
+  async getProductionRecipes(companyId: string) {
+    const { data, error } = await supabase
+      .from("production_recipes")
+      .select(`
+        *,
+        products:product_id!inner(company_id, name, sku)
+      `)
+      .eq("products.company_id", companyId);
 
+    if (error) {
+      console.error("production_recipes query error:", error);
+      throw new Error(`production_recipes: ${error.message}`);
+    }
+    return data || [];
+  },
+
+  async createStandaloneRecipe(recipe: Partial<ProductionRecipe>) {
+    const { data, error } = await supabase.from("production_recipes").insert([recipe]).select();
+    if (error) throw new Error(`production_recipes: ${error.message}`);
+    return data?.[0];
+  },
+
+  async updateStandaloneRecipe(id: string, updates: Partial<ProductionRecipe>) {
+    const { error } = await supabase.from("production_recipes").update(updates).eq("id", id);
+    if (error) throw new Error(`production_recipes: ${error.message}`);
+  },
+
+  async deleteStandaloneRecipe(id: string) {
+    const { error } = await supabase.from("production_recipes").delete().eq("id", id);
+    if (error) throw new Error(`production_recipes: ${error.message}`);
+  },
   async updatePurchaseRequestStatus(id: string, status: string) {
     const { error } = await supabase.from("purchase_requests").update({ status }).eq("id", id);
     if (error) throw new Error(`purchase_requests: ${error.message}`);

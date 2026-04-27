@@ -20,12 +20,6 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [newVar, setNewVar] = useState("");
 
-  // Recipe Modal
-  const [recipeModalOpen, setRecipeModalOpen] = useState(false);
-  const [activeProductForRecipe, setActiveProductForRecipe] = useState<Product | null>(null);
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [newRecipeItem, setNewRecipeItem] = useState({ raw_material_id: "", quantity_per_unit: 1, fire_rate_percent: 0 });
-
   useEffect(() => {
     let isMounted = true;
     let timer = setTimeout(() => {
@@ -116,47 +110,7 @@ export default function ProductsPage() {
     }
   };
 
-  // -- RECIPE ACTIONS --
-  const openRecipeModal = async (product: Product) => {
-    setActiveProductForRecipe(product);
-    setRecipeModalOpen(true);
-    try {
-      const data = await ProductionService.getProductRecipes(product.id);
-      setRecipes(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const handleAddRecipeItem = async () => {
-    if (!activeProductForRecipe || !newRecipeItem.raw_material_id) return;
-    try {
-      await ProductionService.createProductRecipe({
-        product_id: activeProductForRecipe.id,
-        raw_material_id: newRecipeItem.raw_material_id,
-        quantity_per_unit: newRecipeItem.quantity_per_unit,
-        fire_rate_percent: newRecipeItem.fire_rate_percent
-      });
-      // Refresh
-      const data = await ProductionService.getProductRecipes(activeProductForRecipe.id);
-      setRecipes(data);
-      setNewRecipeItem({ raw_material_id: "", quantity_per_unit: 1, fire_rate_percent: 0 });
-    } catch (err: any) {
-      alert("Reçete eklenemedi: " + err.message);
-    }
-  };
-
-  const handleRemoveRecipeItem = async (id: string) => {
-    try {
-      await ProductionService.deleteProductRecipe(id);
-      if (activeProductForRecipe) {
-        const data = await ProductionService.getProductRecipes(activeProductForRecipe.id);
-        setRecipes(data);
-      }
-    } catch (err: any) {
-      alert("Reçete silinemedi: " + err.message);
-    }
-  };
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -210,9 +164,6 @@ export default function ProductsPage() {
                     <td className="px-6 py-4">{mac ? mac.name : "-"}</td>
                     <td className="px-6 py-4">{p.average_duration_minutes} dk</td>
                     <td className="px-6 py-4 flex justify-end gap-2">
-                      <button onClick={() => openRecipeModal(p)} className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1 font-bold text-[10px]">
-                        <Layers className="w-4 h-4" /> Reçete (BOM)
-                      </button>
                       <button onClick={() => { setEditingProduct(p); setIsProductModalOpen(true); }} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                       <button onClick={() => deleteProduct(p.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </td>
@@ -244,7 +195,11 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE TÜRÜ *</label>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN GRUBU / KATEGORİ</label>
+                  <input type="text" value={editingProduct.category || ""} onChange={e => setEditingProduct({ ...editingProduct, category: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ANA HAMMADDE TÜRÜ *</label>
                   <select value={editingProduct.raw_material_type || ""} onChange={e => setEditingProduct({ ...editingProduct, raw_material_type: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
                     <option value="">Seçiniz</option>
                     <option value="Poliüretan">Poliüretan</option>
@@ -255,20 +210,41 @@ export default function ProductsPage() {
                     <option value="XPE">XPE</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 block mb-1">VARSAYILAN MAKİNE</label>
-                  <select value={editingProduct.default_machine_id || ""} onChange={e => {
-                    const macId = e.target.value || undefined;
-                    const mac = machines.find(m => m.id === macId);
-                    // Automatic default production time if we want, or keep manual
-                    setEditingProduct({ 
-                      ...editingProduct, 
-                      default_machine_id: macId
-                    });
-                  }} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN RENGİ</label>
+                  <input type="text" value={editingProduct.product_color || ""} onChange={e => setEditingProduct({ ...editingProduct, product_color: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">HAMMADDE RENGİ</label>
+                  <input type="text" value={editingProduct.material_color || ""} onChange={e => setEditingProduct({ ...editingProduct, material_color: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRETİLDİĞİ MAKİNE</label>
+                  <select value={editingProduct.machine_id || editingProduct.default_machine_id || ""} onChange={e => setEditingProduct({ ...editingProduct, machine_id: e.target.value || undefined, default_machine_id: e.target.value || undefined })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100">
                     <option value="">Seçiniz (Opsiyonel)</option>
                     {machines.map(m => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
                   </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN ETİKETİ</label>
+                  <input type="text" placeholder="Örn: X30 Comfort Etiketi" value={editingProduct.product_label || ""} onChange={e => setEditingProduct({ ...editingProduct, product_label: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">ÜRÜN GÖRSELİ (URL)</label>
+                  <input type="text" placeholder="https://..." value={editingProduct.image_url || ""} onChange={e => setEditingProduct({ ...editingProduct, image_url: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">KESİM BIÇAĞI / KALIP MODELİ</label>
+                  <input type="text" placeholder="Örn: 211 model" value={editingProduct.cutting_blade_model || ""} onChange={e => setEditingProduct({ ...editingProduct, cutting_blade_model: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
                 </div>
               </div>
 
@@ -285,11 +261,6 @@ export default function ProductsPage() {
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">KALIP SAYISI</label>
                   <input type="number" value={editingProduct.mold_count || 0} onChange={e => setEditingProduct({ ...editingProduct, mold_count: parseInt(e.target.value) })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
                 </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 block mb-1">RENK BİLGİSİ</label>
-                <input type="text" placeholder="Siyah, Beyaz, Gri" value={editingProduct.color_info || ""} onChange={e => setEditingProduct({ ...editingProduct, color_info: e.target.value })} className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" />
               </div>
 
               {/* Variations */}
@@ -335,28 +306,11 @@ export default function ProductsPage() {
                       </button>
                     </span>
                   ))}
-                  {(editingProduct.variations || []).length === 0 && (
-                    <span className="text-[10px] text-slate-400 font-bold uppercase italic py-1">Varyasyon tanımlanmamış.</span>
-                  )}
                 </div>
 
                 {/* Hazır Setler */}
                 <div className="flex flex-wrap gap-1 mt-2">
                   <span className="text-[10px] font-bold text-slate-400 block w-full mb-1">HAZIR VARYASYON SETLERİ</span>
-                  <button 
-                    type="button" 
-                    onClick={() => setEditingProduct({ ...editingProduct, variations: ["S", "M", "L"] })}
-                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-blue-50 hover:text-blue-600 border border-slate-200"
-                  >
-                    S, M, L
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setEditingProduct({ ...editingProduct, variations: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47"] })}
-                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-blue-50 hover:text-blue-600 border border-slate-200"
-                  >
-                    36 - 47
-                  </button>
                   <button 
                     type="button" 
                     onClick={() => setEditingProduct({ ...editingProduct, variations: ["36-37", "38-39", "40-41", "42-43", "44-45", "46-47"] })}
@@ -376,71 +330,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* RECIPE MODAL */}
-      {recipeModalOpen && activeProductForRecipe && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[2.5rem] p-8 max-w-2xl w-full border border-slate-100 shadow-2xl flex flex-col h-[80vh]">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-900">Ürün Reçetesi (BOM)</h2>
-                <p className="text-slate-500 text-xs font-bold">{activeProductForRecipe.name} ({activeProductForRecipe.sku})</p>
-              </div>
-              <button onClick={() => setRecipeModalOpen(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X className="w-5 h-5 text-slate-500" /></button>
-            </div>
 
-            {/* Reçete Listesi */}
-            <div className="flex-1 overflow-y-auto mb-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
-              {recipes.length === 0 ? (
-                <div className="text-center text-slate-400 text-sm font-medium py-8">Henüz bu ürün için reçete oluşturulmamış.</div>
-              ) : (
-                <div className="space-y-3">
-                  {recipes.map(r => (
-                    <div key={r.id} className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{r.raw_materials?.name}</p>
-                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">BİRİM: {r.raw_materials?.unit} | FİRE: %{r.fire_rate_percent}</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-black text-blue-600 text-lg">{r.quantity_per_unit}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase">Miktar</p>
-                        </div>
-                        <button onClick={() => handleRemoveRecipeItem(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Yeni Reçete Kalemi Ekle */}
-            <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-              <h3 className="text-xs font-bold text-indigo-900 mb-3 uppercase tracking-wider">Yeni Hammadde Kalemi Ekle</h3>
-              <div className="flex flex-wrap gap-3 items-end">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">HAMMADDE</label>
-                  <select value={newRecipeItem.raw_material_id} onChange={e => setNewRecipeItem({ ...newRecipeItem, raw_material_id: e.target.value })} className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100">
-                    <option value="">Seçiniz</option>
-                    {rawMaterials.map(rm => <option key={rm.id} value={rm.id}>{rm.name} ({rm.unit})</option>)}
-                  </select>
-                </div>
-                <div className="w-24">
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">MİKTAR</label>
-                  <input type="number" step="0.01" value={newRecipeItem.quantity_per_unit} onChange={e => setNewRecipeItem({ ...newRecipeItem, quantity_per_unit: parseFloat(e.target.value) })} className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100" />
-                </div>
-                <div className="w-24">
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">FİRE (%)</label>
-                  <input type="number" step="0.01" value={newRecipeItem.fire_rate_percent} onChange={e => setNewRecipeItem({ ...newRecipeItem, fire_rate_percent: parseFloat(e.target.value) })} className="w-full text-xs font-semibold px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100" />
-                </div>
-                <button onClick={handleAddRecipeItem} disabled={!newRecipeItem.raw_material_id} className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );
