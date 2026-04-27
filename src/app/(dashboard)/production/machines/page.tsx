@@ -18,6 +18,9 @@ export default function MachinesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedMachineType, setSelectedMachineType] = useState("");
+  const [customMachineType, setCustomMachineType] = useState("");
+  
   const [formData, setFormData] = useState<Partial<Machine>>({
     name: "",
     code: "",
@@ -111,17 +114,34 @@ export default function MachinesPage() {
       return;
     }
 
-    const moldCount = Number((formData as any).mold_count || 0);
-    if (!moldCount || moldCount <= 0) {
-      setFormError("Kalıp sayısı sıfırdan büyük bir sayı olmalıdır.");
+    let moldCountValue: number | undefined = undefined;
+    const rawMoldCount = (formData as any).mold_count;
+    if (rawMoldCount !== undefined && rawMoldCount !== null && rawMoldCount !== "") {
+      moldCountValue = Number(rawMoldCount);
+      if (moldCountValue <= 0) {
+        setFormError("Kalıp sayısı sıfırdan büyük bir sayı olmalıdır.");
+        return;
+      }
+    }
+
+    if (!selectedMachineType) {
+      setFormError("Makine türü zorunlu bir alandır.");
+      return;
+    }
+
+    if (selectedMachineType === "Diğer / Manuel" && !customMachineType.trim()) {
+      setFormError("Manuel makine türü alanı boş bırakılamaz.");
       return;
     }
 
     try {
       setSaving(true);
+      const machineTypeToSave = selectedMachineType === "Diğer / Manuel" ? customMachineType : selectedMachineType;
+      
       const payload = {
         ...formData,
-        mold_count: moldCount,
+        mold_count: moldCountValue,
+        machine_type: machineTypeToSave,
         company_id: targetCompanyId
       };
 
@@ -142,6 +162,8 @@ export default function MachinesPage() {
         description: "",
         last_maintenance_date: ""
       });
+      setSelectedMachineType("");
+      setCustomMachineType("");
       setFormError(null);
       setEditingId(null);
       loadData();
@@ -164,12 +186,35 @@ export default function MachinesPage() {
 
   const openAdd = () => {
     setEditingId(null);
+    setSelectedMachineType("");
+    setCustomMachineType("");
     setFormData({ name: "", code: "", capacity_units_per_hour: 10, status: "active", description: "", last_maintenance_date: "" });
     setIsModalOpen(true);
   };
 
   const openEdit = (m: Machine) => {
     setEditingId(m.id);
+    
+    const presetTypes = [
+      "Poliüretan Makinası", 
+      "Eva Makinası", 
+      "Etiket Makinası", 
+      "Laminasyon Makinası", 
+      "Sünger Baskı Makinası", 
+      "Dijital Baskı Makinası"
+    ];
+
+    if (m.machine_type && presetTypes.includes(m.machine_type)) {
+      setSelectedMachineType(m.machine_type);
+      setCustomMachineType("");
+    } else if (m.machine_type) {
+      setSelectedMachineType("Diğer / Manuel");
+      setCustomMachineType(m.machine_type);
+    } else {
+      setSelectedMachineType("");
+      setCustomMachineType("");
+    }
+
     setFormData({ ...m, last_maintenance_date: m.last_maintenance_date || "" });
     setIsModalOpen(true);
   };
@@ -274,8 +319,8 @@ export default function MachinesPage() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">MAKİNE TÜRÜ</label>
                   <select 
-                    value={(formData as any).machine_type || ""} 
-                    onChange={e => setFormData({ ...formData, machine_type: e.target.value })} 
+                    value={selectedMachineType} 
+                    onChange={e => setSelectedMachineType(e.target.value)} 
                     required 
                     className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100"
                   >
@@ -286,6 +331,7 @@ export default function MachinesPage() {
                     <option value="Laminasyon Makinası">Laminasyon Makinası</option>
                     <option value="Sünger Baskı Makinası">Sünger Baskı Makinası</option>
                     <option value="Dijital Baskı Makinası">Dijital Baskı Makinası</option>
+                    <option value="Diğer / Manuel">Diğer / Manuel</option>
                   </select>
                 </div>
                 <div>
@@ -293,14 +339,27 @@ export default function MachinesPage() {
                   <input 
                     type="number" 
                     step="1" 
-                    value={(formData as any).mold_count || ""} 
-                    onChange={e => setFormData({ ...formData, mold_count: parseInt(e.target.value) })} 
-                    required 
+                    value={(formData as any).mold_count === undefined || (formData as any).mold_count === null ? "" : (formData as any).mold_count} 
+                    onChange={e => setFormData({ ...formData, mold_count: e.target.value === "" ? undefined : parseInt(e.target.value) })} 
                     className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
-                    placeholder="Örn: 4" 
+                    placeholder="Örn: 4 (Opsiyonel)" 
                   />
                 </div>
               </div>
+
+              {selectedMachineType === "Diğer / Manuel" && (
+                <div className="animate-in slide-in-from-top-1 duration-200">
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1">MANUEL MAKİNE TÜRÜ</label>
+                  <input 
+                    type="text" 
+                    value={customMachineType} 
+                    onChange={e => setCustomMachineType(e.target.value)} 
+                    required 
+                    className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                    placeholder="Örn: Kesim Presi" 
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
