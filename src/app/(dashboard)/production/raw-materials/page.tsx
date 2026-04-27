@@ -85,18 +85,56 @@ export default function RawMaterialsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id) return;
+    if (!profile?.company_id) {
+      alert("Şirket ID bulunamadı. Lütfen oturumunuzu kontrol edin.");
+      return;
+    }
+    
     try {
       setSaving(true);
+      console.log("Submitting material payload:", formData);
+
+      // Clean payload numbers
+      const payload = {
+        ...formData,
+        company_id: profile.company_id,
+        current_stock: Number(formData.current_stock || 0),
+        minimum_stock: Number(formData.minimum_stock || 0),
+        critical_stock: Number(formData.critical_stock || 0),
+        lead_time_days: Number(formData.lead_time_days || 0),
+        package_quantity: formData.package_quantity ? Number(formData.package_quantity) : undefined,
+        width_cm: formData.width_cm ? Number(formData.width_cm) : undefined
+      };
+
       if (editingId) {
-        await ProductionService.updateRawMaterial(editingId, formData);
+        await ProductionService.updateRawMaterial(editingId, payload);
       } else {
-        await ProductionService.createRawMaterial({ ...formData, company_id: profile.company_id } as RawMaterial);
+        await ProductionService.createRawMaterial(payload);
       }
+
       setIsModalOpen(false);
+      
+      // Formu temizle
+      setFormData({
+        name: "",
+        material_type: "",
+        unit: "adet",
+        color: "",
+        package_quantity: undefined,
+        package_quantity_unit: "kg",
+        width_cm: undefined,
+        current_stock: 0,
+        minimum_stock: 0,
+        critical_stock: 0,
+        supplier_name: "",
+        lead_time_days: 3
+      });
+
+      setEditingId(null);
       loadData();
     } catch (err: any) {
-      alert("İşlem başarısız: " + err.message);
+      console.error("Material save error:", err);
+      alert("İşlem başarısız: " + (err.message || "Bilinmeyen bir hata oluştu"));
     } finally {
       setSaving(false);
     }
