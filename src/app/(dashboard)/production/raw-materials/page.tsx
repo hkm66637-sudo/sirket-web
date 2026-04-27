@@ -21,6 +21,9 @@ export default function RawMaterialsPage() {
     material_type: "",
     unit: "adet",
     color: "",
+    package_quantity: undefined,
+    package_quantity_unit: "kg",
+    width_cm: undefined,
     current_stock: 0,
     minimum_stock: 0,
     critical_stock: 0,
@@ -119,7 +122,18 @@ export default function RawMaterialsPage() {
   const openAdd = () => {
     setEditingId(null);
     setFormData({
-      name: "", material_type: "", unit: "adet", color: "", current_stock: 0, minimum_stock: 0, critical_stock: 0, supplier_name: "", lead_time_days: 3
+      name: "",
+      material_type: "",
+      unit: "adet",
+      color: "",
+      package_quantity: undefined,
+      package_quantity_unit: "kg",
+      width_cm: undefined,
+      current_stock: 0,
+      minimum_stock: 0,
+      critical_stock: 0,
+      supplier_name: "",
+      lead_time_days: 3
     });
     setIsModalOpen(true);
   };
@@ -231,21 +245,23 @@ export default function RawMaterialsPage() {
                     onChange={e => {
                       const mType = e.target.value;
                       let mUnit = formData.unit || "adet";
-                      if (mType === "Eva" || mType === "Kumaş") mUnit = "metraj";
+                      if (mType === "Eva" || mType === "Kumaş" || mType === "XPE" || mType === "Sünger") mUnit = "metre";
                       else if (mType === "Poliüretan" || mType === "İzo") mUnit = "varil";
+                      else if (mType === "Boya") mUnit = "kilogram";
                       setFormData({ ...formData, material_type: mType, unit: mUnit });
                     }} 
                     required 
                     className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Seçiniz</option>
-                    <option value="Eva">Eva</option>
-                    <option value="Kumaş">Kumaş</option>
                     <option value="Poliüretan">Poliüretan</option>
                     <option value="İzo">İzo</option>
-                    <option value="Memory">Memory</option>
-                    <option value="Sünger">Sünger</option>
+                    <option value="Eva">Eva</option>
+                    <option value="Kumaş">Kumaş</option>
                     <option value="XPE">XPE</option>
+                    <option value="Sünger">Sünger</option>
+                    <option value="Boya">Boya</option>
+                    <option value="Memory">Memory</option>
                     <option value="Diğer">Diğer</option>
                   </select>
                 </div>
@@ -254,22 +270,74 @@ export default function RawMaterialsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">BİRİM</label>
-                  <input type="text" value={formData.unit || ""} onChange={e => setFormData({ ...formData, unit: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" placeholder="adet, kg, mt, metraj, varil" />
+                  <input type="text" value={formData.unit || ""} onChange={e => setFormData({ ...formData, unit: e.target.value })} required className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" placeholder="adet, kg, mt, metre, varil" />
                 </div>
+                
+                {/* Boya veya genel Renk alanı */}
+                {(formData.material_type === "Boya" || formData.material_type === "Eva" || formData.material_type === "Kumaş" || formData.material_type) && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">
+                      RENK {(formData.material_type !== "Eva" && formData.material_type !== "Kumaş" && formData.material_type !== "Boya") && "(Opsiyonel)"}
+                    </label>
+                    <input 
+                      type="text" 
+                      value={formData.color || ""} 
+                      onChange={e => setFormData({ ...formData, color: e.target.value })} 
+                      required={formData.material_type === "Eva" || formData.material_type === "Kumaş" || formData.material_type === "Boya"} 
+                      className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                      placeholder="Örn: Siyah" 
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Poliüretan & İzo için Varil İçi Miktar */}
+              {(formData.material_type === "Poliüretan" || formData.material_type === "İzo") && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">VARİL İÇİ MİKTAR</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.package_quantity || ""} 
+                      onChange={e => setFormData({ ...formData, package_quantity: parseFloat(e.target.value) })} 
+                      required 
+                      className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
+                      placeholder="Örn: 1000" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 block mb-1">VARİL İÇİ BİRİM</label>
+                    <select 
+                      value={formData.package_quantity_unit || "kg"} 
+                      onChange={e => setFormData({ ...formData, package_quantity_unit: e.target.value })} 
+                      required 
+                      className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="ton">ton</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Eva, Kumaş, XPE, Sünger için Genişlik */}
+              {(formData.material_type === "Eva" || formData.material_type === "Kumaş" || formData.material_type === "XPE" || formData.material_type === "Sünger") && (
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 block mb-1">
-                    RENK {(formData.material_type !== "Eva" && formData.material_type !== "Kumaş") && "(Opsiyonel)"}
+                    GENİŞLİK (CM) {formData.material_type === "Sünger" && "(Opsiyonel)"}
                   </label>
                   <input 
-                    type="text" 
-                    value={formData.color || ""} 
-                    onChange={e => setFormData({ ...formData, color: e.target.value })} 
-                    required={formData.material_type === "Eva" || formData.material_type === "Kumaş"} 
+                    type="number" 
+                    step="0.1" 
+                    value={formData.width_cm || ""} 
+                    onChange={e => setFormData({ ...formData, width_cm: parseFloat(e.target.value) })} 
+                    required={formData.material_type !== "Sünger"} 
                     className="w-full text-xs font-semibold px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-100" 
-                    placeholder="Örn: Siyah" 
+                    placeholder="Örn: 150" 
                   />
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="text-[10px] font-bold text-slate-400 block mb-1">FİİLİ STOK (Fiziksel)</label>

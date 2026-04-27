@@ -50,6 +50,9 @@ export interface RawMaterial {
   unit: string;
   material_type?: string;
   color?: string;
+  package_quantity?: number;
+  package_quantity_unit?: string;
+  width_cm?: number;
   current_stock: number;
   reserved_stock: number;
   minimum_stock: number;
