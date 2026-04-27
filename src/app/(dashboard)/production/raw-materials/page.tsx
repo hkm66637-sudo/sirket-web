@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { ProductionService, RawMaterial } from "@/services/production-service";
 import { useAuth } from "@/context/auth-context";
+import { useCompany } from "@/context/company-context";
 import { PackageOpen, Plus, Search, Edit2, Trash2, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function RawMaterialsPage() {
   const { profile } = useAuth();
+  const { selectedCompanyId, selectedCompany, companies, setSelectedCompanyId } = useCompany();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,13 @@ export default function RawMaterialsPage() {
     lead_time_days: 3
   });
 
+  // Aktif şirket seçili mi kontrol et, yoksa ilkini seç
+  useEffect(() => {
+    if (selectedCompanyId === "ALL" && companies.length > 0) {
+      setSelectedCompanyId(companies[0].id);
+    }
+  }, [selectedCompanyId, companies, setSelectedCompanyId]);
+
   useEffect(() => {
     let isMounted = true;
     let timer = setTimeout(() => {
@@ -43,12 +52,17 @@ export default function RawMaterialsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        if (!profile?.company_id) {
-          // If profile is not ready yet, we wait, but since dependency is [profile], it will re-run.
+        const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+          ? selectedCompanyId 
+          : profile?.company_id;
+
+        if (!targetCompanyId) {
+          // Profil ve şirket bilgisi yoksa bekle
           return;
         }
-        const data = await ProductionService.getRawMaterials(profile.company_id);
-        console.log("Page data:", data);
+
+        const data = await ProductionService.getRawMaterials(targetCompanyId);
+        console.log("Page data for company:", targetCompanyId, data);
         if (isMounted) {
           setMaterials(data || []);
         }
@@ -71,12 +85,17 @@ export default function RawMaterialsPage() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [profile]);
+  }, [profile, selectedCompanyId]);
 
   const loadData = async () => {
-    if (!profile?.company_id) return;
+    const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+      ? selectedCompanyId 
+      : profile?.company_id;
+
+    if (!targetCompanyId) return;
+
     try {
-      const data = await ProductionService.getRawMaterials(profile.company_id);
+      const data = await ProductionService.getRawMaterials(targetCompanyId);
       setMaterials(data || []);
     } catch (err: any) {
       console.error(err);
@@ -85,8 +104,18 @@ export default function RawMaterialsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.company_id) {
-      alert("Şirket ID bulunamadı. Lütfen oturumunuzu kontrol edin.");
+
+    if (selectedCompanyId === "ALL") {
+      alert("Lütfen bir şirket seçin.");
+      return;
+    }
+
+    const targetCompanyId = selectedCompanyId && selectedCompanyId !== "ALL" 
+      ? selectedCompanyId 
+      : profile?.company_id;
+
+    if (!targetCompanyId) {
+      alert("Aktif şirket seçilmedi.");
       return;
     }
     
@@ -97,7 +126,7 @@ export default function RawMaterialsPage() {
       // Clean payload numbers
       const payload = {
         ...formData,
-        company_id: profile.company_id,
+        company_id: targetCompanyId,
         current_stock: Number(formData.current_stock || 0),
         minimum_stock: Number(formData.minimum_stock || 0),
         critical_stock: Number(formData.critical_stock || 0),
@@ -112,6 +141,7 @@ export default function RawMaterialsPage() {
         await ProductionService.createRawMaterial(payload);
       }
 
+      alert("Hammadde başarıyla kaydedildi.");
       setIsModalOpen(false);
       
       // Formu temizle
