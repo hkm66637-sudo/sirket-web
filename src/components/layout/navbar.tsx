@@ -19,20 +19,77 @@ const Navbar = () => {
   const { profile } = useAuth();
   const router = useRouter();
 
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [notisOpen, setNotisOpen] = React.useState(false);
+  const [notifs, setNotifs] = React.useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/auth/login");
   };
 
-  const [isOpen, setIsOpen] = React.useState(false);
+  const fetchNotifications = async () => {
+    if (!profile?.role) return;
+    try {
+      let query = supabase
+        .from("corporate_order_notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      const userRole = profile.role;
+      const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+
+      if (!isAdmin) {
+        query = query.eq("target_role", userRole);
+      }
+
+      const { data } = await query;
+      if (data) {
+        setNotifs(data);
+        setUnreadCount(data.filter((n: any) => !n.is_read).length);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!profile?.role) return;
+    try {
+      const userRole = profile.role;
+      const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+
+      let query = supabase
+        .from("corporate_order_notifications")
+        .update({ is_read: true })
+        .eq("is_read", false);
+
+      if (!isAdmin) {
+        query = query.eq("target_role", userRole);
+      }
+
+      await query;
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   React.useEffect(() => {
-    const closeMenu = () => setIsOpen(false);
-    if (isOpen) {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [profile]);
+
+  React.useEffect(() => {
+    const closeMenu = () => { setIsOpen(false); setNotisOpen(false); };
+    if (isOpen || notisOpen) {
       document.addEventListener("click", closeMenu);
     }
     return () => document.removeEventListener("click", closeMenu);
-  }, [isOpen]);
+  }, [isOpen, notisOpen]);
 
   return (
     <header className="h-16 border-b border-white bg-white/60 backdrop-blur-md sticky top-0 z-[150] px-8 flex items-center justify-between">
@@ -47,11 +104,36 @@ const Navbar = () => {
 
       {/* Actions & Profile */}
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-1">
-          <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all relative">
+        <div className="flex items-center gap-1 relative">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setNotisOpen(!notisOpen); if(!notisOpen) markAllAsRead(); }}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all relative"
+          >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white animate-ping" />
+            )}
           </button>
+
+          {/* Notifications Dropdown */}
+          <div className={cn(
+            "absolute top-full right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 transition-all transform origin-top-right z-[160] space-y-2",
+            notisOpen ? "opacity-100 visible scale-100" : "opacity-0 invisible scale-95"
+          )}>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-2">Bildirimler ({unreadCount} Okunmamış)</p>
+            {notifs.length === 0 ? (
+              <p className="text-[10px] font-bold text-slate-400 text-center py-4">Bildirim bulunmuyor.</p>
+            ) : (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {notifs.map(n => (
+                  <div key={n.id} className="p-2 hover:bg-slate-50 rounded-xl text-left transition-colors cursor-pointer" onClick={() => n.order_id && router.push(`/corporate/orders/${n.order_id}`)}>
+                    <p className="text-xs font-bold text-slate-800">{n.title || 'İş Akışı Bildirimi'}</p>
+                    <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{n.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="h-8 w-px bg-slate-200" />

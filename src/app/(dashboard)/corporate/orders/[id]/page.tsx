@@ -149,6 +149,23 @@ export default function CorporateOrderDetail({ params }: { params: Promise<{ id:
           changed_by: profile?.id
         }]);
 
+      // Push Notification
+      let targetRole = 'pazarlama_muduru';
+      if (nextStage === 'grafiker') targetRole = 'grafiker';
+      if (nextStage === 'muhasebe') targetRole = 'muhasebe_muduru';
+      if (nextStage === 'uretim') targetRole = 'uretim_muduru';
+      if (nextStage === 'depo') targetRole = 'depo_muduru';
+
+      await supabase
+        .from("corporate_order_notifications")
+        .insert([{
+          title: `Yeni Görev: #${order.order_number}`,
+          message: `Sipariş ${nextStage} aşamasına geçti. Durum: ${nextStatus}`,
+          order_id: order.id,
+          target_role: targetRole,
+          is_read: false
+        }]);
+
       await fetchFullDetails();
     } catch (err: any) {
       alert("Hata: " + err.message);
