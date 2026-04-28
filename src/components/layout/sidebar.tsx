@@ -50,6 +50,7 @@ const Sidebar = () => {
   const moduleMenus = {
     finance: [
       { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] },
+      { name: "Kurumsal Siparişler", href: "/corporate", icon: ShoppingCart, roles: ["super_admin", "admin", "pazarlama_muduru", "grafiker", "muhasebe_muduru", "uretim_muduru", "depo_muduru"] },
       { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
       { name: "Genel Takvim", href: "/calendar/general", icon: Calendar, roles: ["super_admin", "admin", "operasyon", "finans", "muhasebe_muduru"] },
       { name: "Finans", href: "/finance/transactions", icon: Wallet, roles: ["super_admin", "admin", "finans", "muhasebe_muduru", "muhasebe_personeli"] },
@@ -64,10 +65,12 @@ const Sidebar = () => {
     ],
     ecommerce: [
       { name: "E-Ticaret Dashboard", href: "/ecommerce", icon: LayoutDashboard, roles: ["super_admin", "admin", "eticaret_yoneticisi", "eticaret_personeli"] },
+      { name: "Kurumsal Siparişler", href: "/corporate", icon: ShoppingCart, roles: ["super_admin", "admin", "pazarlama_muduru", "grafiker", "muhasebe_muduru", "uretim_muduru", "depo_muduru"] },
       { name: "Görevler", href: "/tasks", icon: CheckSquare, roles: ["super_admin", "admin", "operasyon", "finans", "uretim_muduru", "pazarlama_muduru", "depo_yoneticisi", "eticaret_yoneticisi", "muhasebe_muduru", "uretim_personeli", "pazarlama_personeli", "depo_personeli", "eticaret_personeli", "muhasebe_personeli"] },
     ],
     production: [
       { name: "Üretim Dashboard", href: "/production", icon: LayoutDashboard, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "depo_yoneticisi", "depo_personeli"] },
+      { name: "Kurumsal Siparişler", href: "/corporate", icon: ShoppingCart, roles: ["super_admin", "admin", "pazarlama_muduru", "grafiker", "muhasebe_muduru", "uretim_muduru", "depo_muduru"] },
       { name: "Siparişler / İş Emirleri", href: "/production/orders", icon: ShoppingCart, roles: ["super_admin", "admin", "uretim_muduru", "uretim_personeli", "finans", "muhasebe_muduru"] },
       { name: "Ürünler", href: "/production/products", icon: Package, roles: ["super_admin", "admin", "uretim_muduru"] },
       { name: "Reçeteler", href: "/production/recipes", icon: Layers, roles: ["super_admin", "admin", "uretim_muduru"] },

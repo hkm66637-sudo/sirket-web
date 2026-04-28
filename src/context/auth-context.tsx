@@ -15,7 +15,8 @@ export type UserRole =
   | 'depo_yoneticisi' | 'depo_personeli'
   | 'eticaret_yoneticisi' | 'eticaret_personeli'
   | 'muhasebe_muduru' | 'muhasebe_personeli'
-  | 'operasyon' | 'finans';
+  | 'operasyon' | 'finans'
+  | 'grafiker' | 'depo_muduru';
 
 export interface Profile {
   id: string;
