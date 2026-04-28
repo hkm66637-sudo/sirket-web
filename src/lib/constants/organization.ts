@@ -8,6 +8,7 @@ export const ACCESS_LEVELS = [
 export const DEPARTMENTS = [
   "Üretim",
   "Pazarlama",
+  "Tasarım/Grafik",
   "Depo",
   "E-Ticaret",
   "Finans",
@@ -21,6 +22,7 @@ export const ROLE_LABELS: Record<string, string> = {
   uretim_personeli: "Üretim Personeli",
   pazarlama_muduru: "Pazarlama Müdürü",
   pazarlama_personeli: "Pazarlama Personeli",
+  grafiker: "Grafiker",
   depo_yoneticisi: "Depo Yöneticisi",
   depo_personeli: "Depo Personeli",
   eticaret_yoneticisi: "E-Ticaret Yöneticisi",
