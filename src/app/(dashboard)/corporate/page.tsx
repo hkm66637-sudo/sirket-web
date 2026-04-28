@@ -57,10 +57,6 @@ export default function CorporateDashboard() {
       setLoading(true);
       setError(null);
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Zaman aşımı. Veriler yüklenemedi.")), 15000)
-      );
-
       let query = supabase
         .from("corporate_orders")
         .select("id, order_number, customer_name, customer_company, order_type, current_stage, status, responsible_role, total_amount, currency, deadline_date, created_at")
@@ -70,10 +66,7 @@ export default function CorporateDashboard() {
         query = query.eq("company_id", selectedCompanyId);
       }
 
-      // RLS Fallback / Client Filtering based on user role
-      const { data, error: fetchErr } = await Promise.race([query, timeoutPromise]) as any;
-
-      if (fetchErr) throw fetchErr;
+      const { data, error: fetchErr } = await query;
       
       const rawOrders = data || [];
 
