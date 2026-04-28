@@ -132,7 +132,7 @@ export class DashboardService {
       let performanceQuery = supabase
         .from("finance_records")
         .select(`
-          *,
+          id, amount, type, banka_id, status, date, category, partner_id,
           finance_categories (
             id,
             name
@@ -141,15 +141,14 @@ export class DashboardService {
         .gte("date", twelveMonthsAgo)
         .order("date", { ascending: false });
 
-      // Banka bakiyeleri için tüm geçmişi kapsayan ama sadece gerekli kolonları alan sorgu
       let bankBalanceRecordsQuery = supabase
         .from("finance_records")
         .select("amount, type, banka_id, status")
         .neq("status", "İptal Edildi");
 
-      let banksQuery = supabase.from("banks").select("*, companies(company_name)").eq("aktif_mi", true);
-      let tasksQuery = supabase.from("tasks").select("*").neq("status", "Tamamlandı");
-      let partnersQuery = supabase.from("partner_transactions").select("*");
+      let banksQuery = supabase.from("banks").select("id, banka_adi, hesap_adi, baslangic_bakiyesi, aktif_mi, companies(company_name)").eq("aktif_mi", true);
+      let tasksQuery = supabase.from("tasks").select("id, due_date, status, title, module, priority").neq("status", "Tamamlandı");
+      let partnersQuery = supabase.from("partner_transactions").select("id, amount, type, partner_id");
 
       if (companyId && companyId !== "ALL") {
         performanceQuery = performanceQuery.or(`company_id.eq.${companyId},company_id.is.null`);
@@ -232,7 +231,7 @@ export class DashboardService {
           banka_adi: bank.banka_adi,
           hesap_adi: bank.hesap_adi,
           currentBalance: Number(bank.baslangic_bakiyesi || 0) + realizedIncome - realizedExpense,
-          company_name: bank.companies?.company_name
+          company_name: Array.isArray(bank.companies) ? bank.companies[0]?.company_name : (bank.companies as any)?.company_name
         };
       });
 

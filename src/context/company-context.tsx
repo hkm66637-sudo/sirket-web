@@ -27,6 +27,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchCompanies = useCallback(async () => {
+    console.log("company fetch started");
     try {
       setLoading(true);
       setErrorMsg(null);
@@ -68,6 +69,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       console.error("❌ CompanyProvider: Beklenmedik Hata!", err);
       setErrorMsg(`Sistem hatası: ${err.message || 'Bilinmeyen hata'}`);
     } finally {
+      console.log("company fetch finished");
       console.log("🏁 CompanyProvider: Yükleme tamamlandı.");
       setLoading(false);
     }

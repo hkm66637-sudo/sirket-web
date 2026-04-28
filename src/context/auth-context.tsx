@@ -49,19 +49,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     const initAuth = async () => {
+      console.log("auth check started");
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
+        console.log("auth check finished", !!currentUser);
+        
         if (isMounted) {
           setUser(currentUser);
         }
 
         if (currentUser) {
+          console.log("profile fetch started");
           const { data, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id, full_name, email, role, company_id, access_scope, status")
             .eq("id", currentUser.id)
             .single();
+
+          console.log("profile fetch finished", !!data);
 
           if (isMounted) {
             if (!error && data) {
@@ -76,6 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 status: 'active'
               });
             }
+          }
+        } else {
+          // No user, push to login
+          if (isMounted) {
+            setProfile(null);
           }
         }
       } catch (err) {
