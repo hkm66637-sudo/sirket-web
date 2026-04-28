@@ -296,6 +296,14 @@ export default function CorporateOrders() {
                       </td>
                       <td className="px-6 py-4 flex justify-end gap-2 items-center h-full pt-6">
                         <button 
+                          onClick={() => router.push(`/corporate/orders/${order.id}`)}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Detay Görüntüle"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+
+                        <button 
                           disabled={updating}
                           onClick={() => { setActiveOrder(order); setIsNoteModalOpen(true); }}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
