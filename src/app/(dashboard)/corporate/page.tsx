@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useCompany } from "@/context/company-context";
 import { supabase } from "@/lib/supabase";
@@ -16,7 +17,8 @@ import {
   Filter, 
   Calendar,
   User,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -37,6 +39,7 @@ interface CorporateOrder {
 }
 
 export default function CorporateDashboard() {
+  const router = useRouter();
   const { profile } = useAuth();
   const { selectedCompanyId } = useCompany();
 
@@ -161,11 +164,21 @@ export default function CorporateDashboard() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6 text-blue-600" /> Kurumsal Sipariş Paneli
-          </h1>
-          <p className="text-slate-500 text-xs font-medium mt-1">Promosyon ve Toptan satış iş akışlarını anlık yönetin.</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6 text-blue-600" /> Kurumsal Sipariş Paneli
+            </h1>
+            <p className="text-slate-500 text-xs font-medium mt-1">Promosyon ve Toptan satış iş akışlarını anlık yönetin.</p>
+          </div>
+          {(profile?.role === 'admin' || profile?.role === 'super_admin' || profile?.role === 'pazarlama_muduru') && (
+            <button 
+              onClick={() => router.push("/corporate/new")}
+              className="flex items-center gap-2 bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-blue-700 shadow-md transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Yeni Sipariş
+            </button>
+          )}
         </div>
 
         {/* Filters */}
