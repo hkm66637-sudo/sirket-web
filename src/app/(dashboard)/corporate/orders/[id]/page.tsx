@@ -81,10 +81,13 @@ export default function CorporateOrderDetail({ params }: { params: Promise<{ id:
   const [items, setItems] = useState<ItemDetail[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [history, setHistory] = useState<HistoryLog[]>([]);
+  const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Action inputs
   const [newComment, setNewComment] = useState("");
+  const [newFileUrl, setNewFileUrl] = useState("");
+  const [newFileName, setNewFileName] = useState("");
   const [updating, setUpdating] = useState(false);
   const [cargoCompany, setCargoCompany] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -106,6 +109,9 @@ export default function CorporateOrderDetail({ params }: { params: Promise<{ id:
 
       const { data: hData } = await supabase.from("corporate_order_status_history").select("*").eq("order_id", orderId).order("changed_at", { ascending: false });
       setHistory(hData || []);
+
+      const { data: fData } = await supabase.from("corporate_order_files").select("*").eq("order_id", orderId);
+      setFiles(fData || []);
 
       if (oData?.cargo_company) setCargoCompany(oData.cargo_company);
       if (oData?.tracking_number) setTrackingNumber(oData.tracking_number);
